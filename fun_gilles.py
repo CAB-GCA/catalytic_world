@@ -106,9 +106,44 @@ def c_matrix(reactions, species):
     return c
 
         
-
+def reactants(c):
+    c_reactants = abs(np.where(c<0, c, 0))
+    return c_reactants
+    
+def gillespie(abundances, reactions, species, k_types, k, n, t, c):
+    # Get h (one per reaction)
+    m = calculate_n_reactions(reactions)
+    h = np.zeros(m)
+    a = np.zeros(m)
+    c_reactants = reactants(c)
+    abundance = abundances[n]
     
     
+    for i in range(m):
+        # Get the h_m
+        
+        if k_types[i] == '1' or k_types[i] == '2':
+            # h_m = X1*X2 or h_m = X1
+            x = abundance[c_reactants[i] == 1]
+            h[i] = np.prod(x)
+         
+        elif k_types[i] == '2':
+            # h_m = (1/2)*X1*(X1-1)
+            x = abundance[c_reactants[i] == 1]
+            h[i] = (1/2)*x*(x-1)
+        
+        # Get the a_m
+        a[i] = h[i]*k[i]
+    
+    # Get the a_0
+    a0 = np.sum(a)
+    
+    return h, a, a0
+    
+    
+    
+    
+        
     
     
 
