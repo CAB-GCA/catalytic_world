@@ -72,23 +72,24 @@ def calculate_n_reactions(reactions):
     '''
     return np.shape(reactions)[0]
 
-def c_matrix(reactions):
+def c_matrix(reactions, species):
     '''
-    
+
     Parameters
     ----------
     reactions : numpy array containing the reactions in rows. The first and second
     column will be the reactants and the third and fourth the products. The last
     row indicates the type of reaction (monomolecular, bimolecular...)
+    species : TYPE
+        DESCRIPTION.
 
     Returns
     -------
-    c : a matrix with reactions in rows and a specie in each column. The values
+    c :  a matrix with reactions in rows and a specie in each column. The values
     indicate the steichiometry of the specie in that reaction.
 
     '''
     n_reactions = calculate_n_reactions(reactions)
-    species = obtain_species(reactions)
     n_species = len(species)
     c = np.zeros(shape= (n_reactions, n_species))
 
@@ -105,7 +106,9 @@ def c_matrix(reactions):
     return c
 
         
-def obtain_abundances(abundances, c_matrix, reaction):
+
+    
+    
     
     
 

@@ -15,10 +15,13 @@ k = [0.1,0.01]
 # Volume:
 V = 100
 initial_food = 50 # Initial population number
-food_len = 1
+food_molecules = 2
 
 reactions = read_file(file)
+species = obtain_species(reactions)
+abundances = np.zeros((n_iterations,np.shape(species)[0]))
+abundances[0,:food_molecules] = initial_food
 
-print(reactions[0,:][:-1])
-print(c_matrix(reactions))
+print(species, abundances[:1,:])
+
 
