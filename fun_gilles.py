@@ -12,8 +12,8 @@ def read_file(file_name: str):
         the reactions in rows. The first and second column will be the reactants 
         and the third and fourth the products. The last row indicates the type 
         of reaction 
-        - 1: bimolecular (equal a+a -> )
-        - 2: monomolecular (a -> )
+        - 1: monomolecular (a -> )
+        - 2: bimolecular (equal a+a -> )
         - 3: bimolecular (but different a+b -> )
         - 4: food generation ( -> food)
         
@@ -122,8 +122,8 @@ def gillespie(abundances, reactions, species, k_types, k, n, t, c):
     for i in range(m):
         # Get the h_m
         
-        if k_types[i] == '1' or k_types[i] == '2':
-            # h_m = X1*X2 or h_m = X1
+        if k_types[i] == '1' or k_types[i] == '3':
+            # h_m = X1 or h_m = X1*X2
             x = abundance[c_reactants[i] == 1]
             h[i] = np.prod(x)
          
