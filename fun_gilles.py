@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from random import random
 
 def read_file(file_name: str):
     '''
@@ -138,12 +139,21 @@ def gillespie(abundances, reactions, species, k_types, k, n, t, c):
     # Get the a_0
     a0 = np.sum(a)
     
-    return h, a, a0
+    # Get two random numbers, r1 and r2
+    r1 = random()
+    r2 = random()
     
+    # Get mu and tau
+    tau = (1/a0) * math.log(1/r1)
     
+    sum_a = np.cumsum(a)
+    for mu in range(len(a)):
+        if sum_a[mu] >= r2*a0:
+            break
     
+    abundances[n+1] = abundances[n] + c[mu]
+    t += tau
+    n += 1
     
-        
+    return abundances, n, t
     
-    
-
