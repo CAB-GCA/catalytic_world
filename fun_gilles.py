@@ -111,46 +111,60 @@ def reactants(c):
     c_reactants = abs(np.where(c<0, c, 0))
     return c_reactants
 
-def calculate_a(i, k_types, abundance, c_reactants, h, k, a):
-    if k_types[i] == '1' or k_types[i] == '3':
-        # h_m = X1 or h_m = X1*X2
+def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
+    if k_types[i] == '1':
+        # h_m = X1
         x = abundance[c_reactants[i] == 1]
-        h[i] = np.prod(x)
+        h[i] = x
      
     elif k_types[i] == '2':
         # h_m = (1/2)*X1*(X1-1)
         x = abundance[c_reactants[i] == 1]
-        h[i] = (1/2)*x*(x-1)
+        h[i] = (1/2)*x*(x-1)*(1/V)
+    
+    elif k_types[i] == '3':
+        # h_m = X1*X2
+        x = abundance[c_reactants[i] == 1]
+        h[i] = np.prod(x)*(1/V)
     
     # Get the a_m
     a[i] = h[i]*k[i]
     
     return a
     
+def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V):
+    species = obtain_species(reactions)
+    abundances = np.zeros((iterations+1,np.shape(species)[0]))
+    abundances[0,:food_molecules] = initial_food
+    c = c_matrix(reactions, species)
+    times = np.zeros(iterations+1)
+    k_types = reactions[:,-1]
+    n_reactions = calculate_n_reactions(reactions)
+    if method == 'Gillespie':
+        t=0        
+        for n in range(iterations):
+            abundances, n, t = gillespie(abundances, n_reactions, species, 
+                                                   k_types, k, n, t, c, V)
+            times[n] = t
+        
+    return abundances, times
 
     
-def gillespie(abundances, reactions, species, k_types, k, n, t, c, mu, a, h):
+    
+def gillespie(abundances, m, species, k_types, k, n_iteration, t, c_matrix, V):
     # Get h (one per reaction)
-    m = calculate_n_reactions(reactions)
-    c_reactants = reactants(c)
-    abundance = abundances[n]
+    c_reactants = reactants(c_matrix)
+    abundance = abundances[n_iteration]
+    h = np.zeros(m)
+    a = np.zeros(m)
     
-    if t != 0:
-        a = calculate_a(mu, k_types, abundance, c_reactants, h, k, a)
-    
-    else:
-        for i in range(m):
-            h = np.zeros(m)
-            a = np.zeros(m)
-            # Get the h_m
-            a = calculate_a(i, k_types, abundance, c_reactants, h, k, a)
+    for i in range(m):
+        a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
 
     # Get the a_0
     a0 = np.sum(a)
     if a0 == 0:
         raise Exception("La probabilidad total es 0 !!")
-            
-        
     
     # Get two random numbers, r1 and r2
     r1 = random()
@@ -164,9 +178,9 @@ def gillespie(abundances, reactions, species, k_types, k, n, t, c, mu, a, h):
         if sum_a[mu] >= r2*a0:
             break
     
-    abundances[n+1] = abundances[n] + c[mu]
+    abundances[n_iteration+1] = abundances[n_iteration] + c_matrix[mu]
     t += tau
-    n += 1
+    n_iteration += 1
     
-    return abundances, n, t, mu, a, h
+    return abundances, n_iteration, t
     
