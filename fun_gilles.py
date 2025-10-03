@@ -110,34 +110,47 @@ def c_matrix(reactions, species):
 def reactants(c):
     c_reactants = abs(np.where(c<0, c, 0))
     return c_reactants
+
+def calculate_a(i, k_types, abundance, c_reactants, h, k, a):
+    if k_types[i] == '1' or k_types[i] == '3':
+        # h_m = X1 or h_m = X1*X2
+        x = abundance[c_reactants[i] == 1]
+        h[i] = np.prod(x)
+     
+    elif k_types[i] == '2':
+        # h_m = (1/2)*X1*(X1-1)
+        x = abundance[c_reactants[i] == 1]
+        h[i] = (1/2)*x*(x-1)
     
-def gillespie(abundances, reactions, species, k_types, k, n, t, c):
+    # Get the a_m
+    a[i] = h[i]*k[i]
+    
+    return a
+    
+
+    
+def gillespie(abundances, reactions, species, k_types, k, n, t, c, mu, a, h):
     # Get h (one per reaction)
     m = calculate_n_reactions(reactions)
-    h = np.zeros(m)
-    a = np.zeros(m)
     c_reactants = reactants(c)
     abundance = abundances[n]
     
+    if t != 0:
+        a = calculate_a(mu, k_types, abundance, c_reactants, h, k, a)
     
-    for i in range(m):
-        # Get the h_m
-        
-        if k_types[i] == '1' or k_types[i] == '3':
-            # h_m = X1 or h_m = X1*X2
-            x = abundance[c_reactants[i] == 1]
-            h[i] = np.prod(x)
-         
-        elif k_types[i] == '2':
-            # h_m = (1/2)*X1*(X1-1)
-            x = abundance[c_reactants[i] == 1]
-            h[i] = (1/2)*x*(x-1)
-        
-        # Get the a_m
-        a[i] = h[i]*k[i]
-    
+    else:
+        for i in range(m):
+            h = np.zeros(m)
+            a = np.zeros(m)
+            # Get the h_m
+            a = calculate_a(i, k_types, abundance, c_reactants, h, k, a)
+
     # Get the a_0
     a0 = np.sum(a)
+    if a0 == 0:
+        raise Exception("La probabilidad total es 0 !!")
+            
+        
     
     # Get two random numbers, r1 and r2
     r1 = random()
@@ -155,5 +168,5 @@ def gillespie(abundances, reactions, species, k_types, k, n, t, c):
     t += tau
     n += 1
     
-    return abundances, n, t
+    return abundances, n, t, mu, a, h
     
