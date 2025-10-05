@@ -1,0 +1,13 @@
+r1,r2,p1,p2,ktype
+a,a,,aa,2
+aa,,a,a,1
+a,aa,,aaa,3
+aaa,,a,aa,1
+aa,a,,aaa,3
+aaa,,aa,a,1
+a,aaa,,aaaa,3
+aaaa,,a,aaa,1
+aa,aa,,aaaa,2
+aaaa,,aa,aa,1
+aaa,a,,aaaa,3
+aaaa,,aaa,a,1
