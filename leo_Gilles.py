@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 from fun_gilles import *
 
 # Initialization:
-file = "reactions_XYC.txt" # M reactions
-n_iterations = 10000
-method = "Gillespie"
+file = "reactions_L_4_d_1.txt" # M reactions
+n_iterations = 10
+method = "Deterministic"
 # Reaction constants:
-k = [0.01]*4
+k = [0.1]*12
 # Volume:
-V = 100
-initial_food = 50 # Initial population number
+V = 10
+initial_food = 500 # Initial population number
 food_molecules = 3
 
 reactions = read_file(file)
@@ -20,7 +20,7 @@ abundances, times = chemistry(method, n_iterations, reactions, food_molecules, i
 
 # Representation
 plt.figure()
-colors = plt.cm.coolwarm(np.linspace(0, 1, len(species)))
+colors = plt.cm.Spectral(np.linspace(0, 1, len(species)))
 plt.grid()
 
 for i in range(len(species)):

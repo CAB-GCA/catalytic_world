@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from random import random
+from scipy.integrate import solve_ivp
 
 def read_file(file_name: str):
     '''
@@ -54,10 +55,8 @@ def obtain_species(reactions):
     species = np.array(sorted(np.unique(species), key= len))
     return species
 
-def length(x):
-    return len(x)
 
-def calculate_n_reactions(reactions):
+def calculate_m(reactions):
     '''
 
     Parameters
@@ -90,11 +89,11 @@ def c_matrix(reactions, species):
     indicate the steichiometry of the specie in that reaction.
 
     '''
-    n_reactions = calculate_n_reactions(reactions)
+    m = calculate_m(reactions)
     n_species = len(species)
-    c = np.zeros(shape= (n_reactions, n_species))
+    c = np.zeros(shape= (m, n_species))
 
-    for i in range(n_reactions):
+    for i in range(m):
         reaction = reactions[i,:]
         for j in range(len(reaction)):
             if reaction[j] in species: # If the element is different from '' it will be in species
@@ -119,7 +118,7 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
      
     elif k_types[i] == '2':
         # h_m = (1/2)*X1*(X1-1)
-        x = abundance[c_reactants[i] == 1]
+        x = abundance[c_reactants[i] == 2][0]
         h[i] = (1/2)*x*(x-1)*(1/V)
     
     elif k_types[i] == '3':
@@ -139,21 +138,24 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
     c = c_matrix(reactions, species)
     times = np.zeros(iterations+1)
     k_types = reactions[:,-1]
-    n_reactions = calculate_n_reactions(reactions)
+    m = calculate_m(reactions)
     if method == 'Gillespie':
         t=0        
         for n in range(iterations):
-            abundances, n, t = gillespie(abundances, n_reactions, species, 
+            abundances, n, t = gillespie(abundances, m, species, 
                                                    k_types, k, n, t, c, V)
             times[n] = t
+    elif method == 'Deterministic':
+        dt = 0.001
+        times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], iterations, dt, species)
         
     return abundances, times
 
     
     
-def gillespie(abundances, m, species, k_types, k, n_iteration, t, c_matrix, V):
+def gillespie(abundances, m, species, k_types, k, n_iteration, t, c, V):
     # Get h (one per reaction)
-    c_reactants = reactants(c_matrix)
+    c_reactants = reactants(c)
     abundance = abundances[n_iteration]
     h = np.zeros(m)
     a = np.zeros(m)
@@ -178,9 +180,35 @@ def gillespie(abundances, m, species, k_types, k, n_iteration, t, c_matrix, V):
         if sum_a[mu] >= r2*a0:
             break
     
-    abundances[n_iteration+1] = abundances[n_iteration] + c_matrix[mu]
+    abundances[n_iteration+1] = abundances[n_iteration] + c[mu]
     t += tau
     n_iteration += 1
     
     return abundances, n_iteration, t
-    
+
+
+
+def integrate_ODEs(reactions, k, V, initial_abundance, t_end, dt, species):
+    """
+    """
+    n_species = len(species)
+    c = c_matrix(reactions, species)
+    c_reactants = reactants(c)
+    k_types = reactions[:, -1]
+    m = calculate_m(reactions)
+    n_steps = int(t_end / dt)
+    times = np.linspace(0, t_end, n_steps + 1)
+    abundances = np.zeros((n_steps + 1, n_species))
+    abundances[0, :] = initial_abundance
+
+    def rhs(t, X):
+        h = np.zeros(m)
+        a = np.zeros(m)
+        for i in range(m):
+            a = calculate_a(a, i, k_types, X, c_reactants, h, k, V)
+        return c.T @ a 
+
+    sol = solve_ivp(rhs, [0, t_end], initial_abundance)
+    times = sol.t
+    abundances = sol.y.T 
+    return times, abundances
