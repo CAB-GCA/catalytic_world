@@ -118,7 +118,7 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
      
     elif k_types[i] == '2':
         # h_m = (1/2)*X1*(X1-1)
-        x = abundance[c_reactants[i] == 2][0]
+        x = abundance[c_reactants[i] == 2]
         h[i] = (1/2)*x*(x-1)*(1/V)
     
     elif k_types[i] == '3':
@@ -130,6 +130,27 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
     a[i] = h[i]*k[i]
     
     return a
+
+def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
+    if k_types[i] == '1':
+        # h_m = x1
+        x = abundance[c_reactants[i] == 1]
+        h[i] = x/V
+     
+    elif k_types[i] == '2':
+        # h_m = x^2
+        x = abundance[c_reactants[i] == 2]
+        h[i] = (x/V)**2
+    
+    elif k_types[i] == '3':
+        # h_m = x1*x2
+        x = abundance[c_reactants[i] == 1]
+        h[i] = np.prod(x)*((1/V)**2)
+    
+    # Get the a_m
+    dxdt[i] = h[i]*k[i]
+    
+    return dxdt
     
 def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V):
     species = obtain_species(reactions)
@@ -139,6 +160,8 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
     times = np.zeros(iterations+1)
     k_types = reactions[:,-1]
     m = calculate_m(reactions)
+    if m != len(k):
+        raise Exception('No se han definido suficientes constantes de reacción')
     if method == 'Gillespie':
         t=0        
         for n in range(iterations):
@@ -203,11 +226,11 @@ def integrate_ODEs(reactions, k, V, initial_abundance, t_end, dt, species):
 
     def rhs(t, X):
         h = np.zeros(m)
-        a = np.zeros(m)
+        dxdt = np.zeros(m)
         for i in range(m):
-            a = calculate_a(a, i, k_types, X, c_reactants, h, k, V)
-        return c.T @ a 
-
+            dxdt = calculate_dxdt(dxdt, i, k_types, X, c_reactants, h, k, V)
+        return c.T @ dxdt 
+    
     sol = solve_ivp(rhs, [0, t_end], initial_abundance)
     times = sol.t
     abundances = sol.y.T 
