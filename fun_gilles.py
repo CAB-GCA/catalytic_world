@@ -169,8 +169,7 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
                                                    k_types, k, n, t, c, V)
             times[n] = t
     elif method == 'Deterministic':
-        dt = 0.001
-        times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], iterations, dt, species)
+        times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], iterations, species)
         
     return abundances, times
 
@@ -211,7 +210,7 @@ def gillespie(abundances, m, species, k_types, k, n_iteration, t, c, V):
 
 
 
-def integrate_ODEs(reactions, k, V, initial_abundance, t_end, dt, species):
+def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     """
     """
     n_species = len(species)
@@ -219,9 +218,9 @@ def integrate_ODEs(reactions, k, V, initial_abundance, t_end, dt, species):
     c_reactants = reactants(c)
     k_types = reactions[:, -1]
     m = calculate_m(reactions)
-    n_steps = int(t_end / dt)
-    times = np.linspace(0, t_end, n_steps + 1)
-    abundances = np.zeros((n_steps + 1, n_species))
+    t_end = 100 / max(k) # simulará 100 veces aprox la reacción más rápida
+    times = np.linspace(0, t_end, iterations + 1)
+    abundances = np.zeros((iterations + 1, n_species))
     abundances[0, :] = initial_abundance
 
     def rhs(t, X):
@@ -231,7 +230,7 @@ def integrate_ODEs(reactions, k, V, initial_abundance, t_end, dt, species):
             dxdt = calculate_dxdt(dxdt, i, k_types, X, c_reactants, h, k, V)
         return c.T @ dxdt 
     
-    sol = solve_ivp(rhs, [0, t_end], initial_abundance)
+    sol = solve_ivp(rhs, [0, t_end], initial_abundance, method= 'BDF')
     times = sol.t
     abundances = sol.y.T 
     return times, abundances
