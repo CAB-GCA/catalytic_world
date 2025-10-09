@@ -4,8 +4,8 @@ from fun_gilles import *
 
 # Initialization:
 file = "reactions_XY.txt" # M reactions
-n_iterations = 10
-method = "Deterministic" # Gillespie or Deterministic
+n_iterations = 1000
+method = "Gillespie" # Gillespie or Deterministic
 # Reaction constants:
 k = [0.1]*2 # len(k)= # de reacciones
 # Volume:
