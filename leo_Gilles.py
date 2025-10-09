@@ -10,7 +10,7 @@ method = "Gillespie" # Gillespie or Deterministic
 k = [10,1,10,1] # len(k)= # de reacciones
 # Volume:
 V = 1
-initial_food = [5,10,20] # initial molecules number
+initial_food = 1000 # initial molecules number
 food_molecules = 3
 
 reactions = read_file(file)
