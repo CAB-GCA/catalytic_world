@@ -110,26 +110,6 @@ def reactants(c):
     c_reactants = abs(np.where(c<0, c, 0))
     return c_reactants
 
-def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
-    if k_types[i] == '1':
-        # h_m = X1
-        x = abundance[c_reactants[i] == 1]
-        h[i] = x
-     
-    elif k_types[i] == '2':
-        # h_m = (1/2)*X1*(X1-1)
-        x = abundance[c_reactants[i] == 2]
-        h[i] = (1/2)*x*(x-1)*(1/V)
-    
-    elif k_types[i] == '3':
-        # h_m = X1*X2
-        x = abundance[c_reactants[i] == 1]
-        h[i] = np.prod(x)*(1/V)
-    
-    # Get the a_m
-    a[i] = h[i]*k[i]
-    
-    return a
 
 def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
     if k_types[i] == '1':
@@ -182,6 +162,27 @@ def gillespie(abundances, m, species, k_types, k, n_iteration, t, c, V):
     h = np.zeros(m)
     a = np.zeros(m)
     
+    def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
+        if k_types[i] == '1':
+            # h_m = X1
+            x = abundance[c_reactants[i] == 1]
+            h[i] = x
+         
+        elif k_types[i] == '2':
+            # h_m = (1/2)*X1*(X1-1)
+            x = abundance[c_reactants[i] == 2]
+            h[i] = (1/2)*x*(x-1)*(1/V)
+        
+        elif k_types[i] == '3':
+            # h_m = X1*X2
+            x = abundance[c_reactants[i] == 1]
+            h[i] = np.prod(x)*(1/V)
+        
+        # Get the a_m
+        a[i] = h[i]*k[i]
+        
+        return a
+    
     for i in range(m):
         a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
 
@@ -208,7 +209,17 @@ def gillespie(abundances, m, species, k_types, k, n_iteration, t, c, V):
     
     return abundances, n_iteration, t
 
-
+def update_a(c):
+    update = []
+    c = np.where(c != 0, 1, 0) # posiciones en las que c no sea 0, se cambian a 1
+    # esto evita que terminos queden como 0 por sumas (por ejemplo 2-2 = 0, aunque
+    # sería posible obtener este resultado por casualidad)
+    
+    for m in c: # por cada fila, cada reaccion
+    # tengo que obtener las reacciones que contienen especies que se estan transformando:
+        update.append(np.nonzero(c @ m)) 
+    
+    return update
 
 def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     """
