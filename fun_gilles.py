@@ -110,26 +110,6 @@ def reactants(c):
     c_reactants = abs(np.where(c<0, c, 0))
     return c_reactants
 
-def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
-    if k_types[i] == '1':
-        # h_m = X1
-        x = abundance[c_reactants[i] == 1]
-        h[i] = x
-     
-    elif k_types[i] == '2':
-        # h_m = (1/2)*X1*(X1-1)
-        x = abundance[c_reactants[i] == 2]
-        h[i] = (1/2)*x*(x-1)*(1/V)
-    
-    elif k_types[i] == '3':
-        # h_m = X1*X2
-        x = abundance[c_reactants[i] == 1]
-        h[i] = np.prod(x)*(1/V)
-    
-    # Get the a_m
-    a[i] = h[i]*k[i]
-    
-    return a
 
 def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
     if k_types[i] == '1':
@@ -157,17 +137,13 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
     abundances = np.zeros((iterations+1,np.shape(species)[0]))
     abundances[0,:food_molecules] = initial_food
     c = c_matrix(reactions, species)
-    times = np.zeros(iterations+1)
     k_types = reactions[:,-1]
     m = calculate_m(reactions)
     if m != len(k):
         raise Exception('No se han definido suficientes constantes de reacción')
     if method == 'Gillespie':
-        t=0        
-        for n in range(iterations):
-            abundances, n, t = gillespie(abundances, m, species, 
-                                                   k_types, k, n, t, c, V)
-            times[n] = t
+        abundances, times = gillespie(abundances, m, species, 
+                                     k_types, k, c, V, iterations)
     elif method == 'Deterministic':
         times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], iterations, species)
         
@@ -175,38 +151,61 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
 
     
     
-def gillespie(abundances, m, species, k_types, k, n_iteration, t, c, V):
+def gillespie(abundances, m, species, k_types, k, c, V, iterations):
     # Get h (one per reaction)
     c_reactants = reactants(c)
-    abundance = abundances[n_iteration]
     h = np.zeros(m)
     a = np.zeros(m)
+    times = np.zeros(iterations+1)
     
-    for i in range(m):
-        a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
-
-    # Get the a_0
-    a0 = np.sum(a)
-    if a0 == 0:
-        raise Exception("La probabilidad total es 0 !!")
+    def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
+        if k_types[i] == '1':
+            # h_m = X1
+            x = abundance[c_reactants[i] == 1]
+            h[i] = x
+         
+        elif k_types[i] == '2':
+            # h_m = (1/2)*X1*(X1-1)
+            x = abundance[c_reactants[i] == 2]
+            h[i] = (1/2)*x*(x-1)*(1/V)
+        
+        elif k_types[i] == '3':
+            # h_m = X1*X2
+            x = abundance[c_reactants[i] == 1]
+            h[i] = np.prod(x)*(1/V)
+        
+        # Get the a_m
+        a[i] = h[i]*k[i]
+        
+        return a
     
-    # Get two random numbers, r1 and r2
-    r1 = random()
-    r2 = random()
+    for n in range(iterations):
+        abundance = abundances[n]
+        
+        for i in range(m):
+            a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
     
-    # Get mu and tau
-    tau = (1/a0) * math.log(1/r1)
+        # Get the a_0
+        a0 = np.sum(a)
+        if a0 == 0:
+            raise Exception("La probabilidad total es 0 !!")
+        
+        # Get two random numbers, r1 and r2
+        r1 = random()
+        r2 = random()
+        
+        # Get mu and tau
+        tau = (1/a0) * math.log(1/r1)
+        
+        sum_a = np.cumsum(a)
+        for mu in range(len(a)):
+            if sum_a[mu] >= r2*a0:
+                break
+        
+        abundances[n+1] = abundances[n] + c[mu]
+        times[n+1] += times[n] + tau
     
-    sum_a = np.cumsum(a)
-    for mu in range(len(a)):
-        if sum_a[mu] >= r2*a0:
-            break
-    
-    abundances[n_iteration+1] = abundances[n_iteration] + c[mu]
-    t += tau
-    n_iteration += 1
-    
-    return abundances, n_iteration, t
+    return abundances, times
 
 
 
