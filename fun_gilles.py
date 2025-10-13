@@ -110,27 +110,6 @@ def reactants(c):
     c_reactants = abs(np.where(c<0, c, 0))
     return c_reactants
 
-
-def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
-    if k_types[i] == '1':
-        # h_m = x1
-        x = abundance[c_reactants[i] == 1]
-        h[i] = x/V
-     
-    elif k_types[i] == '2':
-        # h_m = x^2
-        x = abundance[c_reactants[i] == 2]
-        h[i] = (x/V)**2
-    
-    elif k_types[i] == '3':
-        # h_m = x1*x2
-        x = abundance[c_reactants[i] == 1]
-        h[i] = np.prod(x)*((1/V)**2)
-    
-    # Get the a_m
-    dxdt[i] = h[i]*k[i]
-    
-    return dxdt
     
 def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V):
     species = obtain_species(reactions)
@@ -139,13 +118,17 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
     c = c_matrix(reactions, species)
     k_types = reactions[:,-1]
     m = calculate_m(reactions)
-    if m != len(k):
+    
+    if m < len(k):
         raise Exception('No se han definido suficientes constantes de reacción')
+        
     if method == 'Gillespie':
         abundances, times = gillespie(abundances, m, species, 
                                      k_types, k, c, V, iterations)
+        
     elif method == 'Deterministic':
-        times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], iterations, species)
+        times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], 
+                                           iterations, species)
         
     return abundances, times
 
@@ -179,11 +162,30 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
         
         return a
     
+    def update_a(c):
+        update = []
+        c = np.where(c != 0, 1, 0) # posiciones en las que c no sea 0, se cambian a 1
+        # esto evita que terminos queden como 0 por sumas (por ejemplo 2-2 = 0, aunque
+        # sería posible obtener este resultado por casualidad)
+        
+        for m in c: # por cada fila, cada reaccion
+        # tengo que obtener las reacciones que contienen especies que se estan transformando:
+            update.append(np.nonzero(c @ m)) 
+        
+        return update
+    
+    reactions_to_update = update_a(c)
+    
     for n in range(iterations):
         abundance = abundances[n]
         
-        for i in range(m):
-            a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
+        if n != 0:
+            for i in np.nditer(reactions_to_update[mu]):
+                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
+            
+        else:
+            for i in range(m):
+                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
     
         # Get the a_0
         a0 = np.sum(a)
@@ -210,8 +212,6 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
 
 
 def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
-    """
-    """
     n_species = len(species)
     c = c_matrix(reactions, species)
     c_reactants = reactants(c)
@@ -221,6 +221,27 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     times = np.linspace(0, t_end, iterations + 1)
     abundances = np.zeros((iterations + 1, n_species))
     abundances[0, :] = initial_abundance
+    
+    def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
+        if k_types[i] == '1':
+            # h_m = x1
+            x = abundance[c_reactants[i] == 1]
+            h[i] = x/V
+         
+        elif k_types[i] == '2':
+            # h_m = x^2
+            x = abundance[c_reactants[i] == 2]
+            h[i] = (x/V)**2
+        
+        elif k_types[i] == '3':
+            # h_m = x1*x2
+            x = abundance[c_reactants[i] == 1]
+            h[i] = np.prod(x)*((1/V)**2)
+        
+        # Get the a_m
+        dxdt[i] = h[i]*k[i]
+        
+        return dxdt
 
     def rhs(t, X):
         h = np.zeros(m)
@@ -232,4 +253,5 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     sol = solve_ivp(rhs, [0, t_end], initial_abundance, method= 'BDF')
     times = sol.t
     abundances = sol.y.T 
+    
     return times, abundances
