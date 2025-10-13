@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 from fun_gilles import *
 
 # Initialization:
-file = "reactions_XYC.txt" # M reactions
-n_iterations = 10000
+file = "reactions_prueba.txt" # M reactions
+n_iterations = 100000
 method = "Gillespie" # Gillespie or Deterministic
 # Reaction constants:
-k = [10,1,10,1] # len(k)= # de reacciones
+k = [10,1]*2 # len(k)= # de reacciones
 # Volume:
 V = 100
 initial_food = 1000 # initial molecules number
