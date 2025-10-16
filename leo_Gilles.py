@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 from fun_gilles import *
 
 # Initialization:
-file = "reactions_prueba.txt" # M reactions
-n_iterations = 100000
+file = "C:/Users/cvzad/Documents/all_obs/master/tfm/catalytic_world/reactions_0.txt" # M reactions
+n_iterations = 100
 method = "Gillespie" # Gillespie or Deterministic
 # Reaction constants:
-k = [10,1]*2 # len(k)= # de reacciones
+k = [1,0.1]*2 # len(k)= # de reacciones
 # Volume:
-V = 100
-initial_food = 1000 # initial molecules number
-food_molecules = 3
+V = 1
+initial_food = [1000, 900] # initial molecules number
+food_molecules = 2
 
 reactions = read_file(file)
 species = obtain_species(reactions)

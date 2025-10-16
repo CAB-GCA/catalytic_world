@@ -149,7 +149,7 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
          
         elif k_types[i] == '2':
             # h_m = (1/2)*X1*(X1-1)
-            x = abundance[c_reactants[i] == 2]
+            x = abundance[c_reactants[i] == 1]
             h[i] = (1/2)*x*(x-1)*(1/V)
         
         elif k_types[i] == '3':
@@ -170,11 +170,14 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
         
         for m in c: # por cada fila, cada reaccion
         # tengo que obtener las reacciones que contienen especies que se estan transformando:
-            update.append(np.nonzero(c @ m)) 
+            update.append(np.nonzero(c @ m)) # non.zero devuelve qué posiciones son diferentes a 0
         
         return update
     
-    reactions_to_update = update_a(c)
+    reactions_to_update = update_a(c) # lista con tantos elementos como reacciones haya
+    # si sale la reacción 0, el elemento 0 es un array con las reacciones que se tienen
+    # que actualizar en ese caso, [0,2,3] indicará que se tienen que actualizar las reacciones
+    # 0, 2 y 3, dejando sin actualizar la 1 porque no ha habido cambios en sus reactivos 
     
     for n in range(iterations):
         abundance = abundances[n]
