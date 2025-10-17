@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from fun_gilles import *
 
 # Initialization:
-file = "C:/Users/cvzad/Documents/all_obs/master/tfm/catalytic_world/reactions_XY.txt" # M reactions
-n_iterations = 10000
+file = "reactions_XYC.txt" # M reactions
+n_iterations = 1500
 method = "Gillespie" # Gillespie or Deterministic
 # Reaction constants:
 k = [1,1] # len(k)= # de reacciones
@@ -27,6 +27,7 @@ plt.grid()
 
 for i in range(len(species)):
     plt.plot(times, abundances[:, i], label=species[i], color=colors[i], alpha=0.9)
+
 
 plt.grid(True, linestyle='--', alpha=0.3)
 plt.xlabel("Time")
