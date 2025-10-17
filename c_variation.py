@@ -21,10 +21,10 @@ species = obtain_species(reactions)
 
 # Different values for initial C concentration and k_a:
 initial_c = np.round(np.linspace(1,2500,50))
-k_a = np.logspace(-2, 5, 8)
+k_a = np.logspace(-2, 5, 6)
 n_iterations = 4000
 
-mean_equilibrium = np.zeros((len(initial_c)))
+equilibrium = np.zeros((len(initial_c)))
 colors = plt.cm.Spectral(np.linspace(0, 1, len(k_a)))
 
 for j in range(len(k_a)):
@@ -34,9 +34,9 @@ for j in range(len(k_a)):
         initial_food[0] = initial_c[i]
         abundances, times = chemistry(method, n_iterations, reactions, 
                                       food_molecules, initial_food, k, V)
-        mean_equilibrium[i] = np.mean(abundances[-min(50, len(abundances)):, -1])
+        equilibrium[i] = abundances[-1, -1]
     
-    plt.plot(initial_c, mean_equilibrium, label=f"$k_a$={k_a[j]:.1e}",
+    plt.plot(initial_c, equilibrium, label=f"$k_a$={k_a[j]:.1e}",
              color=colors[j], alpha=0.8)
         
 
