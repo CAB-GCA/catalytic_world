@@ -20,9 +20,9 @@ reactions = read_file(file)
 species = obtain_species(reactions)
 
 # Different values for initial C concentration and k_var:
-initial_c = np.round(np.linspace(1,20,10))
-k_var = np.logspace(-4, 1, 3)
-n_iterations = 500000
+initial_c = np.round(np.linspace(1,20,8))
+k_var = np.logspace(-4, 2, 6)
+n_iterations = 1000000
 
 equilibrium = np.zeros((len(initial_c)))
 colors = plt.cm.Spectral(np.linspace(0, 1, len(k_var)))
