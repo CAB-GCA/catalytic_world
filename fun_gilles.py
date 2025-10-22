@@ -113,8 +113,6 @@ def reactants(c):
     
 def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V):
     species = obtain_species(reactions)
-    abundances = np.zeros((iterations+1,np.shape(species)[0]))
-    abundances[0,:food_molecules] = initial_food
     c = c_matrix(reactions, species)
     k_types = reactions[:,-1]
     m = calculate_m(reactions)
@@ -123,10 +121,14 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
         raise Exception('No se han definido suficientes constantes de reacción')
         
     if method == 'Gillespie':
+        abundances = np.zeros((1,np.shape(species)[0]))
+        abundances[0,:food_molecules] = initial_food
         abundances, times = gillespie(abundances, m, species, 
                                      k_types, k, c, V, iterations)
         
     elif method == 'Deterministic':
+        abundances = np.zeros((iterations+1,np.shape(species)[0]))
+        abundances[0,:food_molecules] = initial_food
         times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], 
                                            iterations, species)
         
@@ -139,7 +141,7 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
     c_reactants = reactants(c)
     h = np.zeros(m)
     a = np.zeros(m)
-    times = np.zeros(iterations+1)
+    times = np.zeros(1)
     
     def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
         if k_types[i] == '1':
@@ -193,7 +195,8 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
         # Get the a_0
         a0 = np.sum(a)
         if a0 == 0:
-            raise Exception("La probabilidad total es 0 !!")
+            print("La probabilidad total es 0 !!")
+            return abundances, times
         
         # Get two random numbers, r1 and r2
         r1 = random()
@@ -207,8 +210,8 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
             if sum_a[mu] >= r2*a0:
                 break
         
-        abundances[n+1] = abundances[n] + c[mu]
-        times[n+1] += times[n] + tau
+        abundances = np.vstack((abundances, abundances[n] + c[mu]))
+        times = np.vstack((times, times[n] + tau))
     
     return abundances, times
 
@@ -220,7 +223,7 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     c_reactants = reactants(c)
     k_types = reactions[:, -1]
     m = calculate_m(reactions)
-    t_end = 100 / max(k) # simulará 100 veces aprox la reacción más rápida
+    t_end = iterations / max(k) # simulará 100 veces aprox la reacción más rápida
     times = np.linspace(0, t_end, iterations + 1)
     abundances = np.zeros((iterations + 1, n_species))
     abundances[0, :] = initial_abundance
