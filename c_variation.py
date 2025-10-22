@@ -4,7 +4,7 @@ from fun_gilles import *
 
 # Initialization:
 file = "reactions_XYC.txt" # M reactions
-method = "Gillespie" # Gillespie or Deterministic
+method = "Deterministic" # Gillespie or Deterministic
 
 # Reaction constants:
 k = [100,100,100,100] # len(k)= # de reacciones
@@ -20,15 +20,15 @@ reactions = read_file(file)
 species = obtain_species(reactions)
 
 # Different values for initial C concentration and k_var:
-initial_c = np.round(np.linspace(1,20,8))
+initial_c = np.round(np.linspace(1,30,15))
 k_var = np.logspace(-4, 2, 6)
-n_iterations = 1000000
+n_iterations = 100000
 
 equilibrium = np.zeros((len(initial_c)))
 colors = plt.cm.Spectral(np.linspace(0, 1, len(k_var)))
 
 for j in range(len(k_var)):
-    k[1] = k_var[j]
+    k[3] = k_var[j]
     
     for i in range(len(initial_c)):
         initial_food[0] = initial_c[i]
@@ -36,7 +36,7 @@ for j in range(len(k_var)):
                                       food_molecules, initial_food, k, V)
         equilibrium[i] = abundances[-1, -1]
     
-    plt.plot(initial_c, equilibrium, label="$k_{ar}$"+f"={k_var[j]:.1e}",
+    plt.plot(initial_c, equilibrium, label="$k_{br}$"+f"={k_var[j]:.1e}",
              color=colors[j], alpha=0.8)
         
 
