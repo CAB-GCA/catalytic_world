@@ -127,7 +127,7 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
                                      k_types, k, c, V, iterations)
         
     elif method == 'Deterministic':
-        abundances = np.zeros((iterations+1,np.shape(species)[0]))
+        abundances = np.zeros((1,np.shape(species)[0]))
         abundances[0,:food_molecules] = initial_food
         times, abundances = integrate_ODEs(reactions, k, V, abundances[0,:], 
                                            iterations, species)
@@ -223,10 +223,7 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     c_reactants = reactants(c)
     k_types = reactions[:, -1]
     m = calculate_m(reactions)
-    t_end = iterations / max(k) # simulará 100 veces aprox la reacción más rápida
-    times = np.linspace(0, t_end, iterations + 1)
-    abundances = np.zeros((iterations + 1, n_species))
-    abundances[0, :] = initial_abundance
+    t_end = iterations
     
     def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
         if k_types[i] == '1':
