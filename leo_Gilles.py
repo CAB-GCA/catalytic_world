@@ -7,18 +7,18 @@ file = "reactions_XYC.txt" # M reactions
 method = "Deterministic" # Gillespie or Deterministic
 
 # Reaction constants:
-k = [1,1e4,1,0] # len(k)= # de reacciones
+k = [1,1,1,1e4] # len(k)= # de reacciones
 # Volume:
-V = 0.1
+V = 1
 
 # condiciones iniciales
-initial_food = [1,1,1] # initial molecules number
+initial_food = [1,10,10] # initial molecules number
 food_molecules = 3
 
 # obtener reacciones y especies:
 reactions = read_file(file)
 species = obtain_species(reactions)
-n_iterations= 10000000 # In the deterministic mode n_iterations refers to the t_end
+n_iterations= 1000000 # In the deterministic mode n_iterations refers to the t_end
 
 
 abundances, times = chemistry(method, n_iterations, reactions, food_molecules, 
