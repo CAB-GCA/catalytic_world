@@ -65,4 +65,3 @@ C_0={initial_food[0]}\n\
 k_a = {k[0]}; k_a_r = {k[1]}\n\
 k_b= {k[2]}, k_b_r={k[3]}\n\
 # iterations = {n_iterations}")
-

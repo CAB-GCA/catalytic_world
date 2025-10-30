@@ -144,7 +144,8 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
     c_reactants = reactants(c)
     h = np.zeros(m)
     a = np.zeros(m)
-    times = np.zeros(1)
+    times = np.array([0.0], dtype=float)
+    V = np.array([np.ravel(V)[-1]], dtype=float)
     abundance_v_relation = np.sum(abundances) / V
 
     def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
@@ -207,7 +208,7 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
 
         else:
             for i in range(m):
-                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V)
+                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
 
         # Get the a_0
         a0 = np.sum(a)
@@ -228,8 +229,9 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
                 break
 
         abundances = np.vstack((abundances, abundances[n] + c[mu]))
-        times = np.vstack((times, times[n] + tau))
-        V = np.vstack((V, update_v(abundances[-1,:], abundance_v_relation)))
+        times = np.append(times, times[-1] + tau)
+        V = np.append(V, update_v(abundances[-1, :], abundance_v_relation))
+
 
     return abundances, times, V
 
