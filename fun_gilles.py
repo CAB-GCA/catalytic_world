@@ -133,7 +133,7 @@ def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V)
     elif method == 'Deterministic':
         abundances = np.zeros((1, np.shape(species)[0]))
         abundances[0, :food_molecules] = initial_food
-        times, abundances = integrate_ODEs(reactions, k, V, abundances[0, :],
+        times, abundances, V = integrate_ODEs(reactions, k, V, abundances[0, :],
                                            iterations, species)
 
     return abundances, times, V
@@ -188,7 +188,7 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
     
     def update_v(abundance, abundance_v_relation):
         total_abundance = np.sum(abundance)
-        
+
         return total_abundance/abundance_v_relation
         
 
@@ -213,7 +213,7 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
         a0 = np.sum(a)
         if a0 == 0:
             print("La probabilidad total es 0 !!")
-            return abundances, times
+            return abundances, times, V
 
         # Get two random numbers, r1 and r2
         r1 = random()
@@ -229,7 +229,7 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
 
         abundances = np.vstack((abundances, abundances[n] + c[mu]))
         times = np.vstack((times, times[n] + tau))
-        V = np.vstack((V, update_v(abundances[:-1,:], abundance_v_relation)))
+        V = np.vstack((V, update_v(abundances[-1,:], abundance_v_relation)))
 
     return abundances, times, V
 
@@ -274,4 +274,5 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     times = sol.t
     abundances = sol.y.T
 
-    return times, abundances
+
+    return times, abundances, V
