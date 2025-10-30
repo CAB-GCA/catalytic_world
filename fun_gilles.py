@@ -7,7 +7,7 @@ from scipy.integrate import solve_ivp
 def read_file(file_name: str):
     '''
 
-    Parameters
+    Input
     ----------
     file_name : str
         a file containing the information of the reactions. This file must contain
@@ -41,7 +41,7 @@ def read_file(file_name: str):
 def obtain_species(reactions):
     '''
 
-    Parameters
+    Input
     ----------
     reactions : numpy array containing the reactions in rows. The first and second
     column will be the reactants and the third and fourth the products. The last
@@ -61,7 +61,7 @@ def obtain_species(reactions):
 def calculate_m(reactions):
     '''
 
-    Parameters
+    Input
     ----------
     reactions : numpy array containing the reactions in rows. The first and second
     column will be the reactants and the third and fourth the products. The last
@@ -78,7 +78,7 @@ def calculate_m(reactions):
 def c_matrix(reactions, species):
     '''
 
-    Parameters
+    Input
     ----------
     reactions : numpy array containing the reactions in rows. The first and second
     column will be the reactants and the third and fourth the products. The last
@@ -89,17 +89,19 @@ def c_matrix(reactions, species):
     Returns
     -------
     c :  a matrix with reactions in rows and a specie in each column. The values
-    indicate the steichiometry of the specie in that reaction.
+    indicate the stoichiometry of the specie in that reaction.
 
     '''
-    m = calculate_m(reactions)
-    n_species = len(species)
-    c = np.zeros(shape=(m, n_species))
-
+    m = calculate_m(reactions) # number of reactions
+    n_species = len(species) # number of species
+    c = np.zeros(shape=(m, n_species)) # c matrix: a row for each reaction and a column for each species
+    
     for i in range(m):
-        reaction = reactions[i, :]
+        reaction = reactions[i, :] 
         for j in range(len(reaction)):
-            if reaction[j] in species:  # If the element is different from '' it will be in species
+            # each j will be a species or empty ('')
+            if reaction[j] in species:  # If the element is different from '' it will be in species 
+                                        # this eliminates empty species
                 # Get the index of the element in the list of species (to keep it coherent)
                 index = list(species).index(reaction[j])
                 if j in range(0, 2):  # If it is a reactant
@@ -110,45 +112,137 @@ def c_matrix(reactions, species):
 
 
 def reactants(c):
+    """
+    Input
+    ----------
+    c: c matrix
+    
+    Returns
+    -------
+    c_reactants: a C matrix with only the reactant species for each
+    reaction
+    """
     c_reactants = abs(np.where(c < 0, c, 0))
     return c_reactants
 
 
-def chemistry(method, iterations, reactions, food_molecules, initial_food, k, V):
+def chemistry(method, iterations, reactions, initial_food, k, V):
+    """
+    Performs the method indicated
+    
+    Input
+    ----------
+    method: "Gillespie" for estochastic simulations or "Deterministic"
+    iterations: for stochastic simulations iterations will be the number of 
+        performed iterations of the algorithm
+        for deterministic simulations, iterations will be the final time
+        of the simulation
+    reactions: numpy array containing the reactions in rows. The first and second
+        column will be the reactants and the third and fourth the products. The last
+        row indicates the type of reaction (monomolecular, bimolecular...)
+    initial_food: numpy array which contains the inital number of molecules
+        this should be as long as the number of species of the simulation
+    k: list containing all the catalytic constants for each reaction 
+    V: initial volume
+    
+    Returns
+    -------
+    time: a 1-dimensional numpy array containing the times at which each iteration
+        took place
+    abundances: a n_species x iterations performed numpy array. Each row will be the
+        abundance found of each species at that iteration
+    V: a 1-dimensional numpy array containing volume of the system at each iteration
+        The volume is defined so that the relation (total number of molecules)/(volume)
+        remains constant
+    """
     species = obtain_species(reactions)
     c = c_matrix(reactions, species)
-    k_types = reactions[:, -1]
-    m = calculate_m(reactions)
+    k_types = reactions[:, -1] # monomolecular, bimolecular...
+    m = calculate_m(reactions) # number of reactions
+    abundances = np.zeros((1, np.shape(species)[0])) # initialization of abundances
 
-    if m < len(k):
+    if m != len(k): # not enough catalytic constants
         raise Exception(
-            'No se han definido suficientes constantes de reacción')
+            'No se ha definido el mismo numero de constantes\n\
+            de reaccion que de reacciones'
+            )
+    
+    if len(initial_food) != len(species): # not enough initial abundances
+        raise Exception(
+            'No se han definido el mismo numero de condiciones\n\
+                iniciales que de especies'
+        )
+    
+    abundances[0, :] = initial_food
 
-    if method == 'Gillespie':
-        abundances = np.zeros((1, np.shape(species)[0]))
-        abundances[0, :food_molecules] = initial_food
-        abundances, times, V = gillespie(abundances, m, species,
-                                      k_types, k, c, V, iterations)
 
-    elif method == 'Deterministic':
-        abundances = np.zeros((1, np.shape(species)[0]))
-        abundances[0, :food_molecules] = initial_food
-        times, abundances, V = integrate_ODEs(reactions, k, V, abundances[0, :],
-                                           iterations, species)
+    if method == 'Gillespie': # estochastic algorithm
+        abundances, times, V = gillespie(abundances, m, k_types, k, c, V, iterations)
+
+    elif method == 'Deterministic': # deterministic algorithm
+        times, abundances, V = integrate_ODEs(reactions, k, V, abundances,
+                                            iterations, species)
 
     return abundances, times, V
 
 
-def gillespie(abundances, m, species, k_types, k, c, V, iterations):
+def gillespie(abundances, m, k_types, k, c, V, iterations):
+    """
+    Performs the Gillespie algorithm
+    
+    Input
+    ----------
+    abundances: the initial abundances for each species
+    m: number of reactions
+    k_types: reaction type
+        - 1: monomolecular (a -> )
+        - 2: bimolecular (equal a+a -> )
+        - 3: bimolecular (but different a+b -> )
+        - 4: food generation ( -> food)
+    k: catalytic constant for each reaction
+    c: C matrix, a matrix with reactions in rows and a specie in each column. The values
+        indicate the stoichiometry of the specie in that reaction.
+    V: initial volume
+    iterations: number of iterations of the algorithm
+    
+    Returns
+    -------
+    abundances: numpy array with dimensions = # of species x # of iterations
+        the quantity of each species at each iteration
+    times: numpy array with dimensions = # of iterations x 1
+        the times at which a reaction takes place according to the algorithm
+    V: a 1-dimensional numpy array containing volume of the system at each iteration
+        The volume is defined so that the relation (total number of molecules)/(volume)
+        remains constant
+    """
     # Get h (one per reaction)
-    c_reactants = reactants(c)
-    h = np.zeros(m)
-    a = np.zeros(m)
+    c_reactants = reactants(c) # c matrix with only reactivos
+    # inizialization:
+    h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
+    a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
     times = np.array([0.0], dtype=float)
-    V = np.array([np.ravel(V)[-1]], dtype=float)
-    abundance_v_relation = np.sum(abundances) / V
+    V = np.array([V], dtype=float)
+    
+    abundance_v_relation = np.sum(abundances) / V # this relation will remain constant during the simulation
 
     def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
+        """
+        Calculates the probability of every possible reaction
+        given the quantity of each species, the volume, the reaction
+        type and the catalytic constant
+        
+        Input
+        -------
+        (a, k_types, abundance, c_reactants, h, k and V: 
+            Previously explained)
+        
+        i: iteration of a calculation (this function is used in a loop)
+            will be equivalent to the reaction number
+        
+        Returns
+        -------
+        a: probability of each reaction taking place
+        """
         if k_types[i] == '1':
             # h_m = X1
             x = abundance[c_reactants[i] == 1]
@@ -174,11 +268,24 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
         return a
 
     def update_a(c):
+        """
+        This allows the algorithm to only update the probabilities of the
+        reactions that have been affected in the previous iteration
+        
+        Input
+        ------
+        c: C matrix
+        
+        Returns
+        -------
+        update: list with len() = # of reactions. When a reaction is performed in 
+            the previous iteration, this contains the reactions that need to be 
+            updated (because the abundance of its species has change)
+        """
         update = []
         # posiciones en las que c no sea 0, se cambian a 1
         c = np.where(c != 0, 1, 0)
-        # esto evita que terminos queden como 0 por sumas (por ejemplo 2-2 = 0, aunque
-        # sería posible obtener este resultado por casualidad)
+        # esto evita que terminos queden como 0 por sumas (por ejemplo 2-2 = 0)
 
         for m in c:  # por cada fila, cada reaccion
             # tengo que obtener las reacciones que contienen especies que se estan transformando:
@@ -188,6 +295,19 @@ def gillespie(abundances, m, species, k_types, k, c, V, iterations):
         return update
     
     def update_v(abundance, abundance_v_relation):
+        """
+        Updates the volume of the system
+        
+        Input
+        ------
+        abundance: the last row of the abundances matrix
+        abundance_v_relation: the relation between the total abundance and 
+            the volume in the initial conditions, which will remain constant
+            
+        Returns
+        --------
+        total_abundance/abundance_v_relation: the volume for the last iteration
+        """
         total_abundance = np.sum(abundance)
 
         return total_abundance/abundance_v_relation
