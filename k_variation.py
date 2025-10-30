@@ -6,45 +6,47 @@ from fun_gilles import *
 file = "reactions_XYC.txt" # M reactions
 method = "Deterministic" # Gillespie or Deterministic
 
-# Reaction constants:
-k = [1,0,1,1] # len(k)= # de reacciones
-# Volume:
-V = 1
-
-# condiciones iniciales
-initial_food = [0,10000,10000] # initial molecules number
 food_molecules = 3
-
 # obtener reacciones y especies:
 reactions = read_file(file)
 species = obtain_species(reactions)
 
-# Different values for initial C concentration and k_var:
-initial_c = np.round(np.linspace(1,1000,6))
-k_var = np.logspace(-4, 5, 30)
-n_iterations = 100000000
+k = [1,0,1,1] # len(k)= # de reacciones
+# Volume:
+initial_food = [0,1000,1000] # initial molecules number
 
-equilibrium = np.zeros((len(k_var)))
-colors = plt.cm.Spectral(np.linspace(0, 1, len(initial_c)))
+initial_c = np.round(np.linspace(1,250,10))
+k_var = [1e-2, 1]
+n_iterations = 1000
+method = "Gillespie"
 
+equilibrium = np.zeros((len(initial_c)))
+colors = plt.cm.Spectral(np.linspace(0, 1, len(k_var)))
+
+for j in range(len(k_var)):
+    k[3] = k_var[j] 
     
-for i in range(len(initial_c)):
-    initial_food[0] = initial_c[i]
+    for i in range(len(initial_c)):
+        initial_food[0] = initial_c[i]
+        abundances, times, V = chemistry(method, n_iterations, reactions, 
+                                    food_molecules, initial_food, k, V0)
+        equilibrium[i] = abundances[-1, -1]/V0
     
-    for j in range(len(k_var)):
-        k[3] = k_var[j]
-        abundances, times = chemistry(method, n_iterations, reactions, 
-                                      food_molecules, initial_food, k, V)
-        equilibrium[j] = abundances[-1, -1]
-    
-    plt.plot(k_var, equilibrium, label="$C_0$"+f"={initial_c[i]}",
-             color=colors[i], alpha=0.8)
-    
-plt.xscale("log")
+    plt.plot(initial_c/V0, equilibrium, label="$k_{br}$"+f"={k_var[j]:.1e}",
+            color=colors[j], alpha=0.8)
+        
+
 plt.grid(True, linestyle='--', alpha=0.3)
-plt.xlabel("$k_{br}$")
-plt.ylabel("$XY_{eq}$")
+plt.xlabel("$[C]_0$")
+plt.ylabel("$[XY]_{eq}$")
 
 plt.legend()
     
 plt.show()
+
+
+print(f"Parameters used for simulation:\n\
+Initial concentrations:\nX_0={initial_food[1]}\nY_0={initial_food[2]}\n\
+k_a = {k[0]}; k_a_r = {k_var}\n\
+k_b= {k[2]}, k_b_r={k[3]}\n\
+# iterations = {n_iterations}")
