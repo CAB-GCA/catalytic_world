@@ -2,7 +2,7 @@
 """
 Created on Thu Oct 16 11:12:09 2025
 
-para entender por qué
+para entender por qué funciona update_a
 
 @author: cvzad
 """
