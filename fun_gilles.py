@@ -221,8 +221,7 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
     h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
     a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
     times = np.array([0.0], dtype=float)
-    V = np.array([V], dtype=float)
-    
+    V = np.array([float(V)], dtype=float)     
     abundance_v_relation = np.sum(abundances) / V # this relation will remain constant during the simulation
 
     def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
@@ -250,7 +249,7 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
 
         elif k_types[i] == '2':
             # h_m = (1/2)*X1*(X1-1)
-            x = abundance[c_reactants[i] == 1]
+            x = abundance[c_reactants[i] == 2]
             h[i] = (1/2)*x*(x-1)*(1/V)
 
         elif k_types[i] == '3':
