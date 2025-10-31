@@ -12,7 +12,7 @@ k = [0.1]*2+[1,0,1,1] # len(k)= # de reacciones
 V = 1000
 
 # condiciones iniciales
-initial_food = [200,1000,1000,0,0] # initial molecules number
+initial_food = [200,0,0,0,0] # initial molecules number
 
 # obtener reacciones y especies:
 reactions = read_file(file)
