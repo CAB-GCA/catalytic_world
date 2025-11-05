@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from random import random
+from random import random, seed
 from scipy.integrate import solve_ivp
 
 
@@ -186,7 +186,7 @@ def chemistry(method, iterations, reactions, initial_food, k, V):
     return abundances, times, V
 
 
-def gillespie(abundances, m, k_types, k, c, V, iterations):
+def gillespie(abundances, m, k_types, k, c, V, iterations, seed = True):
     """
     Performs the Gillespie algorithm
     
@@ -336,6 +336,8 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
             return abundances, times, V
 
         # Get two random numbers, r1 and r2
+        if seed:
+            seed(1)
         r1 = random()
         r2 = random()
 

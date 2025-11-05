@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 16 11:12:09 2025
-
-para entender por qué funciona update_a
-
-@author: cvzad
-"""
-
 from fun_gilles import *
 
 file = "C:/Users/cvzad/Documents/all_obs/master/tfm/catalytic_world/reactions_0.txt" # M reactions
