@@ -3,19 +3,21 @@ import matplotlib.pyplot as plt
 from fun_gilles import *
 
 # Initialization:
-file = "reactions_XYC.txt" # M reactions
+file = "reactions_XYC_food_XY.txt" # M reactions
 method = "Gillespie" # Gillespie or Deterministic
 
-reactions = read_file(file)
-
-k = [1,1,1,1] # len(k)= # de reacciones
+# Reaction constants:
+k = [1,0,1,0]+ [1e-2] # len(k)= # de reacciones
 # Volume:
 V = 1000
-initial_food = [0,1000,1000] + [0]*2 # initial molecules number
-initial_c = np.round(np.linspace(1,250,20))
-k_var = [1e-2,1]
-n_iterations = 40000
-method = "Gillespie"
+
+# condiciones iniciales
+initial_food = [100,0,0,0,0] # initial molecules number
+
+# obtener reacciones y especies:
+reactions = read_file(file)
+species = obtain_species(reactions)
+n_iterations= 10000 # In the deterministic mode n_iterations refers to the t_end
 
 
 abundances, times, V = chemistry(method, n_iterations, reactions,

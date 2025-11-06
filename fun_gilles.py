@@ -2,7 +2,7 @@ import numpy as np
 import math
 from random import random, seed
 from scipy.integrate import solve_ivp
-
+seed(1)
 
 def read_file(file_name: str):
     '''
@@ -186,7 +186,7 @@ def chemistry(method, iterations, reactions, initial_food, k, V):
     return abundances, times, V
 
 
-def gillespie(abundances, m, k_types, k, c, V, iterations, seed = True):
+def gillespie(abundances, m, k_types, k, c, V, iterations):
     """
     Performs the Gillespie algorithm
     
@@ -335,9 +335,7 @@ def gillespie(abundances, m, k_types, k, c, V, iterations, seed = True):
             print("La probabilidad total es 0 !!")
             return abundances, times, V
 
-        # Get two random numbers, r1 and r2
-        if seed:
-            seed(1)
+        # Get two random numbers, r1 and r2        
         r1 = random()
         r2 = random()
 

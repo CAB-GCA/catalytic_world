@@ -3,5 +3,4 @@ x,c,,xc,3
 xc,,x,c,1
 xc,y,xy,c,3
 xy,c,xc,y,3
-,,,y,4
-,,,x,4
+,,x,y,4
