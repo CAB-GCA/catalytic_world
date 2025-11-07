@@ -132,7 +132,8 @@ def chemistry(method, iterations, reactions, initial_food, k, V):
     
     Input
     ----------
-    method: "Gillespie" for estochastic simulations or "Deterministic"
+    method: "Gillespie" or "Protocell" for estochastic simulations or 
+        "Deterministic"
     iterations: for stochastic simulations iterations will be the number of 
         performed iterations of the algorithm
         for deterministic simulations, iterations will be the final time
@@ -572,7 +573,7 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
         new_V = update_v_protocell(new_abundances, abundance_v_relation, volume_species_indices)
         V = np.append(V, new_V)
         # now there's more/less food that can be inside that volume
-        new_abundances[non_volume_species_indices] = int(initial_non_volume_conc * new_V)
+        new_abundances[non_volume_species_indices] = np.round(initial_non_volume_conc * new_V)
         abundances = np.vstack((abundances, new_abundances))
 
 
