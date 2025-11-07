@@ -160,12 +160,6 @@ def chemistry(method, iterations, reactions, initial_food, k, V):
     k_types = reactions[:, -1] # monomolecular, bimolecular...
     m = calculate_m(reactions) # number of reactions
     abundances = np.zeros((1, np.shape(species)[0])) # initialization of abundances
-
-    if m != len(k): # not enough catalytic constants
-        raise Exception(
-            'No se ha definido el mismo numero de constantes\n\
-            de reaccion que de reacciones'
-            )
     
     if len(initial_food) != len(species): # not enough initial abundances
         raise Exception(
@@ -183,8 +177,98 @@ def chemistry(method, iterations, reactions, initial_food, k, V):
         times, abundances, V = integrate_ODEs(reactions, k, V, abundances,
                                             iterations, species)
 
+    elif method == 'Protocell': # estochastic algorithm
+        abundances, times, V = gillespieProtocell(abundances, m, k_types, k, c, 
+                                                V, iterations)
+    
     return abundances, times, V
 
+def update_a(c):
+    """
+    This allows the algorithm to only update the probabilities of the
+    reactions that have been affected in the previous iteration
+    
+    Input
+    ------
+    c: C matrix
+    
+    Returns
+    -------
+    update: list with len() = # of reactions. When a reaction is performed in 
+        the previous iteration, this contains the reactions that need to be 
+        updated (because the abundance of its species has change)
+    """
+    update = []
+    # posiciones en las que c no sea 0, se cambian a 1
+    c = np.where(c != 0, 1, 0)
+    # esto evita que terminos queden como 0 por sumas (por ejemplo 2-2 = 0)
+
+    for m in c:  # por cada fila, cada reaccion
+        # tengo que obtener las reacciones que contienen especies que se estan transformando:
+        # non.zero devuelve qué posiciones son diferentes a 0
+        update.append(np.nonzero(c @ m))
+
+    return update
+
+def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
+    """
+    Calculates the probability of every possible reaction
+    given the quantity of each species, the volume, the reaction
+    type and the catalytic constant
+    
+    Input
+    -------
+    (a, k_types, abundance, c_reactants, h, k and V: 
+        Previously explained)
+    
+    i: iteration of a calculation (this function is used in a loop)
+        will be equivalent to the reaction number
+    
+    Returns
+    -------
+    a: probability of each reaction taking place
+    """
+    if k_types[i] == '1':
+        # h_m = X1
+        x = abundance[c_reactants[i] == 1]
+        h[i] = x
+
+    elif k_types[i] == '2':
+        # h_m = (1/2)*X1*(X1-1)
+        x = abundance[c_reactants[i] == 2]
+        h[i] = (1/2)*x*(x-1)*(1/V)
+
+    elif k_types[i] == '3':
+        # h_m = X1*X2
+        x = abundance[c_reactants[i] == 1]
+        h[i] = np.prod(x)*(1/V)
+    
+    elif k_types[i] == '4':
+        #h_m = 1
+        h[i] = V
+        
+    # Get the a_m
+    a[i] = h[i]*k[i]
+
+    return a
+
+def update_v(abundance, abundance_v_relation):
+    """
+    Updates the volume of the system
+    
+    Input
+    ------
+    abundance: the last row of the abundances matrix
+    abundance_v_relation: the relation between the total abundance and 
+        the volume in the initial conditions, which will remain constant
+        
+    Returns
+    --------
+    total_abundance/abundance_v_relation: the volume for the last iteration
+    """
+    total_abundance = np.sum(abundance)
+
+    return total_abundance/abundance_v_relation
 
 def gillespie(abundances, m, k_types, k, c, V, iterations):
     """
@@ -215,6 +299,11 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
         The volume is defined so that the relation (total number of molecules)/(volume)
         remains constant
     """
+    if m != len(k): # not enough catalytic constants
+        raise Exception(
+            'No se ha definido el mismo numero de constantes\n\
+            de reaccion que de reacciones'
+            )
     # Get h (one per reaction)
     c_reactants = reactants(c) # c matrix with only reactivos
     # inizialization:
@@ -223,95 +312,6 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
     times = np.array([0.0], dtype=float)
     V = np.array([float(V)], dtype=float)     
     abundance_v_relation = np.sum(abundances) / V # this relation will remain constant during the simulation
-
-    def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
-        """
-        Calculates the probability of every possible reaction
-        given the quantity of each species, the volume, the reaction
-        type and the catalytic constant
-        
-        Input
-        -------
-        (a, k_types, abundance, c_reactants, h, k and V: 
-            Previously explained)
-        
-        i: iteration of a calculation (this function is used in a loop)
-            will be equivalent to the reaction number
-        
-        Returns
-        -------
-        a: probability of each reaction taking place
-        """
-        if k_types[i] == '1':
-            # h_m = X1
-            x = abundance[c_reactants[i] == 1]
-            h[i] = x
-
-        elif k_types[i] == '2':
-            # h_m = (1/2)*X1*(X1-1)
-            x = abundance[c_reactants[i] == 2]
-            h[i] = (1/2)*x*(x-1)*(1/V)
-
-        elif k_types[i] == '3':
-            # h_m = X1*X2
-            x = abundance[c_reactants[i] == 1]
-            h[i] = np.prod(x)*(1/V)
-        
-        elif k_types[i] == '4':
-            #h_m = 1
-            h[i] = V
-            
-        # Get the a_m
-        a[i] = h[i]*k[i]
-
-        return a
-
-    def update_a(c):
-        """
-        This allows the algorithm to only update the probabilities of the
-        reactions that have been affected in the previous iteration
-        
-        Input
-        ------
-        c: C matrix
-        
-        Returns
-        -------
-        update: list with len() = # of reactions. When a reaction is performed in 
-            the previous iteration, this contains the reactions that need to be 
-            updated (because the abundance of its species has change)
-        """
-        update = []
-        # posiciones en las que c no sea 0, se cambian a 1
-        c = np.where(c != 0, 1, 0)
-        # esto evita que terminos queden como 0 por sumas (por ejemplo 2-2 = 0)
-
-        for m in c:  # por cada fila, cada reaccion
-            # tengo que obtener las reacciones que contienen especies que se estan transformando:
-            # non.zero devuelve qué posiciones son diferentes a 0
-            update.append(np.nonzero(c @ m))
-
-        return update
-    
-    def update_v(abundance, abundance_v_relation):
-        """
-        Updates the volume of the system
-        
-        Input
-        ------
-        abundance: the last row of the abundances matrix
-        abundance_v_relation: the relation between the total abundance and 
-            the volume in the initial conditions, which will remain constant
-            
-        Returns
-        --------
-        total_abundance/abundance_v_relation: the volume for the last iteration
-        """
-        total_abundance = np.sum(abundance)
-
-        return total_abundance/abundance_v_relation
-        
-
     # lista con tantos elementos como reacciones haya
     reactions_to_update = update_a(c)
     # si sale la reacción 0, el elemento 0 es un array con las reacciones que se tienen
@@ -354,6 +354,26 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
 
     return abundances, times, V
 
+def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
+    if k_types[i] == '1':
+        # h_m = x1
+        x = abundance[c_reactants[i] == 1]
+        h[i] = x/V
+
+    elif k_types[i] == '2':
+        # h_m = x^2
+        x = abundance[c_reactants[i] == 2]
+        h[i] = (x/V)**2
+
+    elif k_types[i] == '3':
+        # h_m = x1*x2
+        x = abundance[c_reactants[i] == 1]
+        h[i] = np.prod(x)*((1/V)**2)
+
+    # Get the a_m
+    dxdt[i] = h[i]*k[i]
+
+    return dxdt
 
 def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     n_species = len(species)
@@ -362,38 +382,198 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
     k_types = reactions[:, -1]
     m = calculate_m(reactions)
     t_end = iterations
-
-    def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
-        if k_types[i] == '1':
-            # h_m = x1
-            x = abundance[c_reactants[i] == 1]
-            h[i] = x/V
-
-        elif k_types[i] == '2':
-            # h_m = x^2
-            x = abundance[c_reactants[i] == 2]
-            h[i] = (x/V)**2
-
-        elif k_types[i] == '3':
-            # h_m = x1*x2
-            x = abundance[c_reactants[i] == 1]
-            h[i] = np.prod(x)*((1/V)**2)
-
-        # Get the a_m
-        dxdt[i] = h[i]*k[i]
-
-        return dxdt
-
+    
+    if m != len(k): # not enough catalytic constants
+        raise Exception(
+            'No se ha definido el mismo numero de constantes\n\
+            de reaccion que de reacciones'
+        )
+    
     def rhs(t, X):
         h = np.zeros(m)
         dxdt = np.zeros(m)
         for i in range(m):
             dxdt = calculate_dxdt(dxdt, i, k_types, X, c_reactants, h, k, V)
         return c.T @ dxdt
-
+    
     sol = solve_ivp(rhs, [0, t_end], initial_abundance, method='BDF')
     times = sol.t
     abundances = sol.y.T
 
 
     return times, abundances, V
+
+def calculate_a_without4(a, i, k_types, abundance, c_reactants, h, k, V):
+    """
+    Calculates the probability of every possible reaction
+    given the quantity of each species, the volume, the reaction
+    type and the catalytic constant
+    
+    Input
+    -------
+    (a, k_types, abundance, c_reactants, h, k and V: 
+        Previously explained)
+    
+    i: iteration of a calculation (this function is used in a loop)
+        will be equivalent to the reaction number
+    
+    Returns
+    -------
+    a: probability of each reaction taking place
+    """
+    if k_types[i] == '1':
+        # h_m = X1
+        x = abundance[c_reactants[i] == 1]
+        h[i] = x
+
+    elif k_types[i] == '2':
+        # h_m = (1/2)*X1*(X1-1)
+        x = abundance[c_reactants[i] == 2]
+        h[i] = (1/2)*x*(x-1)*(1/V)
+
+    elif k_types[i] == '3':
+        # h_m = X1*X2
+        x = abundance[c_reactants[i] == 1]
+        h[i] = np.prod(x)*(1/V)
+    
+    elif k_types[i] == '4':
+        a[i] = 0
+        return a
+    
+    # Get the a_m
+    a[i] = h[i]*k[i]
+
+    return a
+
+def get_non_volume_species_indices(k_types, c):
+    """
+    Identifies the indices of species that are products in a type '4' reaction,
+    as these should be EXCLUDED from volume calculation.
+
+    Input
+    ----------
+    reactions : numpy array containing the reactions information.
+    species : the different species involved.
+    c : The stoichiometry matrix (reactions in rows, species in columns).
+
+    Returns
+    -------
+    non_volume_species_indices : numpy array of indices (columns of c) 
+                                corresponding to the species whose abundance 
+                                should NOT be used for volume calculation.
+    """
+    type_4_reaction_indices = np.where(k_types == '4')[0]
+    
+    # Species indices that are products (c[i, j] > 0) in any type 4 reaction
+    non_volume_species_indices = []
+    for reaction_idx in type_4_reaction_indices:
+        # Find indices j where c[reaction_idx, j] > 0
+        product_indices = np.where(c[reaction_idx, :] > 0)[0]
+        non_volume_species_indices.append(product_indices)
+
+    # Return unique indices
+    return np.unique(non_volume_species_indices)
+
+def update_v_protocell(abundance, abundance_v_relation, volume_species_indices):
+    """
+    Updates the volume of the system based on ALL species EXCEPT those specified.
+
+    Input
+    ------
+    abundance: the last row of the abundances matrix (all species).
+    abundance_v_relation: the constant relation (Total Abundance / Volume)
+        based on the species that DO affect the volume.
+    volume_species_indices: indices of species to include from 
+        total abundance calculation.
+        
+    Returns
+    --------
+    total_abundance/abundance_v_relation: the volume for the last iteration
+    """
+    
+    # Calculate total abundance using only the contributing species indices
+    total_abundance = np.sum(abundance[volume_species_indices])
+
+    if total_abundance <= 0:
+        return 1e-6 
+
+    return total_abundance/abundance_v_relation
+
+def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
+    times = np.array([0.0], dtype=float)
+    V = np.array([float(V)], dtype=float)
+    
+    non_volume_species_indices = get_non_volume_species_indices(k_types, c)
+    # Calculate initial abundance_v_relation based on the contributing species
+    all_species_indices = np.arange(np.shape(c)[1])
+    # The species that contribute are the ones that are not on non_volume_species
+    # np.setdiff1d returns the different values in two arrays --> 
+    # in this case the values will be the indices from species that affect the protocell volume
+    volume_species_indices = np.setdiff1d(all_species_indices, non_volume_species_indices)
+    
+    if len(volume_species_indices) == 0:
+        raise Exception("No species are products of a type '4' reaction, so volume cannot be calculated.")
+    
+    initial_total_abundance = np.sum(abundances[0, volume_species_indices])
+    abundance_v_relation = initial_total_abundance / V[0]
+    initial_non_volume_conc = abundances[0, non_volume_species_indices] / V[0]      
+    no_type_4_reaction_indices = np.where(k_types != '4')[0]
+
+    # filtering to delete the reaction to identify the food species:
+    reactions_to_keep = np.zeros(m, dtype= bool)
+    reactions_to_keep[no_type_4_reaction_indices]= True
+    # variables to update:
+    k_types = k_types[reactions_to_keep]
+    c = c[reactions_to_keep]
+    m = np.shape(c)[0] # number of reactions must be updated
+
+    c_reactants = reactants(c) # c matrix with only reactivos
+    # inizialization:
+    h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
+    a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
+    reactions_to_update = update_a(c)
+
+    if len(no_type_4_reaction_indices) != len(k):
+        raise Exception('El número de constantes de reacción es diferente al número de\
+            reacciones')
+    
+    for n in range(iterations):
+        abundance = abundances[n]
+
+        if n != 0:
+            for i in np.nditer(reactions_to_update[mu]):
+                a = calculate_a_without4(a, i, k_types, abundance, c_reactants, h, k, V[-1])
+
+        else:
+            for i in range(m):
+                a = calculate_a_without4(a, i, k_types, abundance, c_reactants, h, k, V[-1])
+
+        # Get the a_0
+        a0 = np.sum(a)
+        if a0 == 0:
+            print("La probabilidad total es 0 !!")
+            return abundances, times, V
+
+        # Get two random numbers, r1 and r2        
+        r1 = random()
+        r2 = random()
+
+        # Get mu and tau
+        tau = (1/a0) * math.log(1/r1)
+
+        sum_a = np.cumsum(a)
+        for mu in range(len(a)):
+            if sum_a[mu] >= r2*a0:
+                break
+        
+        new_abundances = abundances[n] + c[mu]
+        times = np.append(times, times[-1] + tau)
+        # actualizar el volumen en función de la reacción que haya tocado
+        new_V = update_v_protocell(new_abundances, abundance_v_relation, volume_species_indices)
+        V = np.append(V, new_V)
+        # now there's more/less food that can be inside that volume
+        new_abundances[non_volume_species_indices] = int(initial_non_volume_conc * new_V)
+        abundances = np.vstack((abundances, new_abundances))
+
+
+    return abundances, times, V
