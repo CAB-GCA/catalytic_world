@@ -2,14 +2,14 @@ from fun_gilles import *
 import matplotlib.pyplot as plt
 import numpy as np
 
-file = "reactions_C.txt" # M reactions
-n_iterations = 9000
+file = "reactions_XYC_food_XY.txt" # M reactions
+n_iterations = 200000
 method = "Gillespie" # Gillespie or Deterministic
 # Reaction constants:
-k = [0.8]*6 # len(k)= # de reacciones
+k = [1]*8 # len(k)= # de reacciones
 # Volume:
-V = 200
-initial_food = [500, 500, 0, 0] # initial molecules number
+V = 2000
+initial_food = [5000, 500, 5000, 0, 0] # initial molecules number
 
 reactions = read_file(file)
 species = obtain_species(reactions)
@@ -67,7 +67,7 @@ c = c_matrix(reactions, species)
 # print(get_non_volume_species_indices(reactions[:,-1], c))
 # print(np.arange(np.shape(c)[1]))
 
-abundances, times, V = chemistry(method= 'Protocell', iterations= n_iterations,
+abundances, times, V = chemistry(method= 'Gillespie', iterations= n_iterations,
                                  reactions= reactions, initial_food= initial_food,
                                  k = k, V = V)
 
