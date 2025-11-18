@@ -1,0 +1,7 @@
+r1,r2,p1,p2,ktype
+x,c,,xc,3
+xc,,x,c,1
+xc,y,xy,c,3
+xy,c,xc,y,3
+,,,y,4
+,,,x,4
