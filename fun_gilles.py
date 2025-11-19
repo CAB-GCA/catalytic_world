@@ -2,6 +2,8 @@ import numpy as np
 import math
 from random import random, seed
 from scipy.integrate import solve_ivp
+from numpy.linalg import matrix_rank
+
 seed(1)
 
 def read_file(file_name: str):
@@ -126,6 +128,15 @@ def reactants(c):
     return c_reactants
 
 
+def check_thermodynamics(reactions):
+    c_matrix_wo_food = c_matrix(reactions[reactions[:,-1]!='4'], obtain_species(reactions))
+    if matrix_rank(c_matrix_wo_food) == c_matrix_wo_food.shape[1]/2:
+        return True
+    
+    else:
+        return False
+
+
 def chemistry(method, iterations, reactions, initial_food, k, V):
     """
     Performs the method indicated
@@ -164,12 +175,14 @@ def chemistry(method, iterations, reactions, initial_food, k, V):
     
     if len(initial_food) != len(species): # not enough initial abundances
         raise Exception(
-            'No se han definido el mismo numero de condiciones\n\
+            'No se han definido el mismo numero de condiciones\
                 iniciales que de especies'
         )
     
     abundances[0, :] = initial_food
 
+    if check_thermodynamics(reactions) == False:
+        raise Exception('El sistema no es compatible termodinámicamente')
 
     if method == 'Gillespie': # estochastic algorithm
         abundances, times, V = gillespie(abundances, m, k_types, k, c, V, iterations)
