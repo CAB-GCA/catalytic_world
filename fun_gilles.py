@@ -551,7 +551,8 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
         raise Exception('El número de constantes de reacción es diferente al número de\
             reacciones')
     
-    for n in range(iterations):
+    n = 0
+    while n < iterations:
         abundance = abundances[n]
 
         if n != 0:
@@ -588,6 +589,7 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
         # now there's more/less food that can be inside that volume
         new_abundances[non_volume_species_indices] = np.round(initial_non_volume_conc * new_V)
         abundances = np.vstack((abundances, new_abundances))
+        n += 1
 
 
     return abundances, times, V
