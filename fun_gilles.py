@@ -130,14 +130,18 @@ def reactants(c):
 
 def check_thermodynamics(reactions):
     c_matrix_wo_food = c_matrix(reactions[reactions[:,-1]!='4'], obtain_species(reactions))
-    if matrix_rank(c_matrix_wo_food) == c_matrix_wo_food.shape[1]/2:
+    # max rank = # of species (which is the number of rows of the c_matrix)
+    # since most simulations are run with reversible reactions (if not all)
+    # the max rank = # of species / 2
+    if matrix_rank(c_matrix_wo_food) == c_matrix_wo_food.shape[0]/2:
         return True
     
     else:
         return False
 
 
-def chemistry(method, iterations, reactions, initial_food, k, V):
+def chemistry(method: str, iterations:int, reactions, 
+              initial_food:list, k:list, V, **kwargs):
     """
     Performs the method indicated
     
@@ -185,15 +189,30 @@ def chemistry(method, iterations, reactions, initial_food, k, V):
         raise Exception('El sistema no es compatible termodinámicamente')
 
     if method == 'Gillespie': # estochastic algorithm
+        # TODO cuando funcione protocell con el threshold bien ->
+        # - quitar iterations de protocell
+        # - dejar iterations solo en Gillespie y deterministic
+        # iterations = kwargs.get('iterations', None) 
+        
+        # if iterations is None:
+        #     raise Exception("Gillespie method requires the 'iterations' parameter.")
+        
         abundances, times, V = gillespie(abundances, m, k_types, k, c, V, iterations)
 
     elif method == 'Deterministic': # deterministic algorithm
+        
+        # iterations = kwargs.get('iterations', None) 
+        # if iterations is None:
+        #     raise Exception("Deterministic method requires the 'iterations' parameter.")
+        
         times, abundances, V = integrate_ODEs(reactions, k, V, abundances,
                                             iterations, species)
 
     elif method == 'Protocell': # estochastic algorithm
+        threshold = kwargs.get('threshold', None) 
+        
         abundances, times, V = gillespieProtocell(abundances, m, k_types, k, c, 
-                                                V, iterations)
+                                                V, iterations, threshold)
     
     return abundances, times, V
 
@@ -513,9 +532,36 @@ def update_v_protocell(abundance, abundance_v_relation, volume_species_indices):
 
     return total_abundance/abundance_v_relation
 
-def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
+def block_statistics(abundances):
+    """
+    Calculates the mean and standard deviation for non-overlapping blocks.
+    W is the block size (e.g., 100).
+    """
+    block_mean = np.mean(abundances, axis=0)
+    block_std = np.std(abundances, axis=0)
+    
+    return block_mean, block_std
+
+def threshold_function(V: float) -> float:
+    """
+    Predicts the required SD threshold for a new volume V_new.
+    Threshold = (A / V_new^m) * (1 + margin)
+    """
+    A_fit, m_fit = 6.595, -0.987
+    margin = 0.5
+    if V <= 0:
+        raise ValueError("Volume must be positive.")
+        
+    predicted_sigma = A_fit * (V) ** m_fit
+    threshold = predicted_sigma * (1 + margin)
+    return threshold
+
+def gillespieProtocell(abundances, m, k_types, k, c, V, iterations, threshold):
     times = np.array([0.0], dtype=float)
     V = np.array([float(V)], dtype=float)
+    
+    if threshold == None: # if user does not define a specific threshold
+        threshold = threshold_function(V)
     
     non_volume_species_indices = get_non_volume_species_indices(k_types, c)
     # Calculate initial abundance_v_relation based on the contributing species
@@ -526,11 +572,13 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
     volume_species_indices = np.setdiff1d(all_species_indices, non_volume_species_indices)
     
     if len(volume_species_indices) == 0:
-        raise Exception("No species are products of a type '4' reaction, so volume cannot be calculated.")
+        raise Exception("No species are products of a non type '4' reaction, so volume cannot be calculated.")
     
     initial_total_abundance = np.sum(abundances[0, volume_species_indices])
     abundance_v_relation = initial_total_abundance / V[0]
-    initial_non_volume_conc = abundances[0, non_volume_species_indices] / V[0]      
+    if non_volume_species_indices.any != None:
+        initial_non_volume_conc = abundances[0, non_volume_species_indices] / V[0]      
+    
     no_type_4_reaction_indices = np.where(k_types != '4')[0]
 
     # filtering to delete the reaction to identify the food species:
@@ -552,6 +600,7 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
             reacciones')
     
     n = 0
+    counter = 0
     while n < iterations:
         abundance = abundances[n]
 
@@ -586,10 +635,25 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations):
         # actualizar el volumen en función de la reacción que haya tocado
         new_V = update_v_protocell(new_abundances, abundance_v_relation, volume_species_indices)
         V = np.append(V, new_V)
-        # now there's more/less food that can be inside that volume
-        new_abundances[non_volume_species_indices] = np.round(initial_non_volume_conc * new_V)
+        
+        if non_volume_species_indices.any != None:
+            # now there's more/less food that can be inside that volume
+            new_abundances[non_volume_species_indices] = np.round(initial_non_volume_conc * new_V)
+            
         abundances = np.vstack((abundances, new_abundances))
+                
+        if n%500 == 0 and n > 2000:
+            last_500_concentrations = (abundances[-500:,volume_species_indices].T/V[-500:]).T
+            mean, std = block_statistics(last_500_concentrations)
+            
+            if max(std) < threshold:
+                counter += 1
+                if counter == V[0]/10:
+                    return abundances, times, V
+            else: 
+                counter = 0
+        
         n += 1
 
-
+    print("Criterion for stop was # of iterations")
     return abundances, times, V

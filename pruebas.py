@@ -5,22 +5,21 @@ import pickle
 
 file = 'examples/reactions_autocat.txt'
 reactions = read_file(file_name= file)
-k = [1]*8
-initial = [1000]*8
+n_iterations = 1e100
+method = "Protocell" # Gillespie or Deterministic
+# Reaction constants:
+k = [1]*8 # len(k)= # de reacciones
+# Volume:
 V = 1000
+initial_food = [1000]*4 + [1000] + [0]*3 # initial molecules number
 
-# n_iterations = 1000
-# method = "Protocell"
-
-# abundances, times, V = chemistry(method= method, iterations= n_iterations,
-#                                  reactions= reactions, initial_food= initial,
-#                                  k= k, V= V)
+abundances, times, V = chemistry(method, n_iterations, reactions,
+                                initial_food, k, V, threshold= 0)
 
 # # data_file = open('example','ab')
 # # to_save = np.vstack((abundances.T,times,V))
 # # pickle.dump(to_save, data_file)
 # # data_file.close()
-
 # # print(to_save.shape)
 # # print(to_save.T.shape)
 # # print(to_save.T[:100,-2])
@@ -53,26 +52,41 @@ V = 1000
 # print(std)
 
 
-from numpy.linalg import matrix_rank
+# from numpy.linalg import matrix_rank
 
 
-matrix_rank(np.eye(4)) # Full rank matrix
-print(np.eye(4))
-print(matrix_rank(np.eye(4)))
-I=np.eye(4); I[-1,-1] = 0. # rank deficient matrix
-print(matrix_rank(I))
-print(matrix_rank(np.ones((4,))) )# 1 dimension - rank 1 unless all 0
-print(matrix_rank(np.zeros((4,))))
+# matrix_rank(np.eye(4)) # Full rank matrix
+# print(np.eye(4))
+# print(matrix_rank(np.eye(4)))
+# I=np.eye(4); I[-1,-1] = 0. # rank deficient matrix
+# print(matrix_rank(I))
+# print(matrix_rank(np.ones((4,))) )# 1 dimension - rank 1 unless all 0
+# print(matrix_rank(np.zeros((4,))))
 
-print(reactions)
-print(reactions[reactions[:,-1]!='4'])
-c_matrix_wo_food = c_matrix(reactions[reactions[:,-1]!='4'], obtain_species(reactions))
-print(c_matrix_wo_food)
-print(matrix_rank(c_matrix_wo_food))
+# print(reactions)
+# print(reactions[reactions[:,-1]!='4'])
+# c_matrix_wo_food = c_matrix(reactions[reactions[:,-1]!='4'], obtain_species(reactions))
+# print(c_matrix_wo_food)
+# print(matrix_rank(c_matrix_wo_food))
 
-print(check_thermodynamics(reactions))
+# print(check_thermodynamics(reactions))
 
 
-reactions = read_file('examples/incompatible.txt')
-print(check_thermodynamics(reactions))
-abundances, V, times = chemistry("Protocell", 100, reactions, [10,10,10], [1]*6, 100)
+# reactions = read_file('examples/incompatible.txt')
+# print(check_thermodynamics(reactions))
+# print(1000%102)
+
+
+# def block_statistics(concentration):
+#     """
+#     Calculates the mean and standard deviation for non-overlapping blocks.
+#     W is the block size (e.g., 100).
+#     """
+#     block_mean = np.mean(concentration, axis=0)
+#     block_std = np.std(concentration, axis=0)
+    
+#     return block_mean, block_std
+
+# print(block_statistics(abundances[:10]))
+
+# print(sum([True, False, True]))
