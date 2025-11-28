@@ -133,7 +133,7 @@ def check_thermodynamics(reactions):
     # max rank = # of species (which is the number of rows of the c_matrix)
     # since most simulations are run with reversible reactions (if not all)
     # the max rank = # of species / 2
-    if matrix_rank(c_matrix_wo_food) == c_matrix_wo_food.shape[0]/2:
+    if matrix_rank(c_matrix_wo_food) >= c_matrix_wo_food.shape[0]/2:
         return True
     
     else:
