@@ -21,6 +21,7 @@ def read_file(file_name: str):
         - 2: bimolecular (equal a+a -> )
         - 3: bimolecular (but different a+b -> )
         - 4: food generation ( -> food)
+        - 5: third order (a + b + c ->)
 
 
     Returns
@@ -39,7 +40,13 @@ def read_file(file_name: str):
 
     return reactions
 
-
+def get_header(file_name:str):
+    with open(file_name, "r") as f:
+        r = f.readlines()
+        header = r[0].strip().split(",")
+    
+    return header
+ 
 def obtain_species(reactions):
     '''
 
@@ -77,7 +84,7 @@ def calculate_m(reactions):
     return np.shape(reactions)[0]
 
 
-def c_matrix(reactions, species):
+def c_matrix(reactions, species, header):
     '''
 
     Input
@@ -100,15 +107,15 @@ def c_matrix(reactions, species):
     
     for i in range(m):
         reaction = reactions[i, :] 
-        for j in range(len(reaction)):
+        for j in range(len(header)):
             # each j will be a species or empty ('')
             if reaction[j] in species:  # If the element is different from '' it will be in species 
                                         # this eliminates empty species
                 # Get the index of the element in the list of species (to keep it coherent)
                 index = list(species).index(reaction[j])
-                if j in range(0, 2):  # If it is a reactant
+                if header[j].startswith("r"):  # If it is a reactant
                     c[i, index] -= 1
-                elif j in range(2, 4):  # Or a product
+                elif header[j].startswith("p"):  # Or a product
                     c[i, index] += 1
     return c
 
@@ -128,8 +135,8 @@ def reactants(c):
     return c_reactants
 
 
-def check_thermodynamics(reactions):
-    c_matrix_wo_food = c_matrix(reactions[reactions[:,-1]!='4'], obtain_species(reactions))
+def check_thermodynamics(reactions, header):
+    c_matrix_wo_food = c_matrix(reactions[reactions[:,-1]!='4'], obtain_species(reactions), header)
     # max rank = # of species (which is the number of rows of the c_matrix)
     # since most simulations are run with reversible reactions (if not all)
     # the max rank = # of species / 2
@@ -140,7 +147,7 @@ def check_thermodynamics(reactions):
         return False
 
 
-def chemistry(method: str, iterations:int, reactions, 
+def chemistry(method: str, iterations:int, file: str, 
               initial_food:list, k:list, V, **kwargs):
     """
     Performs the method indicated
@@ -153,11 +160,7 @@ def chemistry(method: str, iterations:int, reactions,
         performed iterations of the algorithm
         for deterministic simulations, iterations will be the final time
         of the simulation
-    reactions: numpy array containing the reactions in rows. The first and second
-        column will be the reactants and the third and fourth the products. The last
-        row indicates the type of reaction (monomolecular, bimolecular...)
-    initial_food: numpy array which contains the inital number of molecules
-        this should be as long as the number of species of the simulation
+    file:
     k: list containing all the catalytic constants for each reaction 
     V: initial volume
     
@@ -171,8 +174,14 @@ def chemistry(method: str, iterations:int, reactions,
         The volume is defined so that the relation (total number of molecules)/(volume)
         remains constant
     """
+    try:
+        reactions = read_file(file)
+        header = get_header(file)
+    except FileExistsError or FileNotFoundError:
+        raise Exception("File not found")
+    
     species = obtain_species(reactions)
-    c = c_matrix(reactions, species)
+    c = c_matrix(reactions, species, header)
     k_types = reactions[:, -1] # monomolecular, bimolecular...
     m = calculate_m(reactions) # number of reactions
     abundances = np.zeros((1, np.shape(species)[0])) # initialization of abundances
@@ -185,7 +194,7 @@ def chemistry(method: str, iterations:int, reactions,
     
     abundances[0, :] = initial_food
 
-    if check_thermodynamics(reactions) == False:
+    if check_thermodynamics(reactions, header) == False:
         raise Exception('El sistema no es compatible termodinámicamente')
 
     if method == 'Gillespie': # estochastic algorithm
@@ -206,7 +215,7 @@ def chemistry(method: str, iterations:int, reactions,
         #     raise Exception("Deterministic method requires the 'iterations' parameter.")
         
         times, abundances, V = integrate_ODEs(reactions, k, V, abundances,
-                                            iterations, species)
+                                            iterations, species, c)
 
     elif method == 'Protocell': # estochastic algorithm
         threshold = kwargs.get('threshold', None) 
@@ -410,9 +419,7 @@ def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
 
     return dxdt
 
-def integrate_ODEs(reactions, k, V, initial_abundance, iterations, species):
-    n_species = len(species)
-    c = c_matrix(reactions, species)
+def integrate_ODEs(reactions, k, V, initial_abundance, iterations, c):
     c_reactants = reactants(c)
     k_types = reactions[:, -1]
     m = calculate_m(reactions)
