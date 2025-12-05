@@ -533,7 +533,6 @@ def update_v_protocell(abundance, abundance_v_relation, volume_species_indices):
 def block_statistics(abundances):
     """
     Calculates the mean and standard deviation for non-overlapping blocks.
-    W is the block size (e.g., 100).
     """
     block_std = np.std(abundances, axis=0)
     
