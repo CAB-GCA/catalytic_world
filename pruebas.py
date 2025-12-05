@@ -5,16 +5,29 @@ import pickle
 
 file = 'examples/reactions_autocat.txt'
 reactions = read_file(file_name= file)
-n_iterations = 1e100
+
+n_iterations = 2e5
 method = "Protocell" # Gillespie or Deterministic
 # Reaction constants:
 k = [1]*8 # len(k)= # de reacciones
 # Volume:
 V = 1000
-initial_food = [1000]*4 + [1000] + [0]*3 # initial molecules number
+initial_food = [1000]*4 + [0]*4 # initial molecules number
+final_volume = []
+k_change = np.logspace(-3,4,7)
 
-abundances, times, V = chemistry(method, n_iterations, reactions,
-                                initial_food, k, V, threshold= 0)
+for k_i in k_change:
+    k[0] = k_i
+    print(f"Performing simulation for k = {k_i}")
+    abundances, times, volumes = chemistry(method, n_iterations, reactions,
+                            initial_food, k, V)
+    print(f"Simulation ended. Final volume = {volumes[-1]}")
+    
+    try:
+        print(f"Volume at t= 10 = {volumes[times>10][0]}")
+        final_volume.append(volumes[times>10][0])
+    except IndexError:
+        final_volume.append(volumes[-1])
 
 # # data_file = open('example','ab')
 # # to_save = np.vstack((abundances.T,times,V))

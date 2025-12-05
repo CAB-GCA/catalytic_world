@@ -133,7 +133,7 @@ def check_thermodynamics(reactions):
     # max rank = # of species (which is the number of rows of the c_matrix)
     # since most simulations are run with reversible reactions (if not all)
     # the max rank = # of species / 2
-    if matrix_rank(c_matrix_wo_food) == c_matrix_wo_food.shape[0]/2:
+    if matrix_rank(c_matrix_wo_food) >= c_matrix_wo_food.shape[0]/2:
         return True
     
     else:
@@ -285,24 +285,6 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
 
     return a
 
-def update_v(abundance, abundance_v_relation):
-    """
-    Updates the volume of the system
-    
-    Input
-    ------
-    abundance: the last row of the abundances matrix
-    abundance_v_relation: the relation between the total abundance and 
-        the volume in the initial conditions, which will remain constant
-        
-    Returns
-    --------
-    total_abundance/abundance_v_relation: the volume for the last iteration
-    """
-    total_abundance = np.sum(abundance)
-
-    return total_abundance/abundance_v_relation
-
 def gillespie(abundances, m, k_types, k, c, V, iterations):
     """
     Performs the Gillespie algorithm
@@ -337,19 +319,39 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
             'No se ha definido el mismo numero de constantes\n\
             de reaccion que de reacciones'
             )
+    
+    # --- INITIALIZATION ---
+    
     # Get h (one per reaction)
     c_reactants = reactants(c) # c matrix with only reactivos
     # inizialization:
     h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
     a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
     times = np.array([0.0], dtype=float)
-    V = np.array([float(V)], dtype=float)     
-    abundance_v_relation = np.sum(abundances) / V # this relation will remain constant during the simulation
-    # lista con tantos elementos como reacciones haya
+    V = np.array([float(V)], dtype=float)
+    
     reactions_to_update = update_a(c)
     # si sale la reacción 0, el elemento 0 es un array con las reacciones que se tienen
     # que actualizar en ese caso, [0,2,3] indicará que se tienen que actualizar las reacciones
     # 0, 2 y 3, dejando sin actualizar la 1 porque no ha habido cambios en sus reactivos
+    
+    # --- VOLUME CALCULATION ---
+    
+    non_volume_species_indices = get_non_volume_species_indices(k_types, c)
+    # Calculate initial abundance_v_relation based on the contributing species
+    all_species_indices = np.arange(np.shape(c)[1])
+    # The species that contribute are the ones that are not on non_volume_species
+    # np.setdiff1d returns the different values in two arrays --> 
+    # in this case the values will be the indices from species that affect the protocell volume
+    volume_species_indices = np.setdiff1d(all_species_indices, non_volume_species_indices)
+    
+    if len(volume_species_indices) == 0:
+        raise Exception("No species are products of a non type '4' reaction, so volume cannot be calculated.")
+    
+    initial_total_abundance = np.sum(abundances[0, volume_species_indices])
+    abundance_v_relation = initial_total_abundance / V[0]
+
+    # --- GILLESPIE ALGORITM ---
 
     for n in range(iterations):
         abundance = abundances[n]
@@ -380,9 +382,9 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
             if sum_a[mu] >= r2*a0:
                 break
 
-        abundances = np.vstack((abundances, abundances[n] + c[mu]))
+        abundances = np.vstack((abundances, abundance + c[mu]))
         times = np.append(times, times[-1] + tau)
-        V = np.append(V, update_v(abundances[-1, :], abundance_v_relation))
+        V = np.append(V, update_v_protocell(abundance, abundance_v_relation, volume_species_indices))
 
 
     return abundances, times, V
@@ -469,10 +471,6 @@ def calculate_a_without4(a, i, k_types, abundance, c_reactants, h, k, V):
         x = abundance[c_reactants[i] == 1]
         h[i] = np.prod(x)*(1/V)
     
-    elif k_types[i] == '4':
-        a[i] = 0
-        return a
-    
     # Get the a_m
     a[i] = h[i]*k[i]
 
@@ -535,12 +533,10 @@ def update_v_protocell(abundance, abundance_v_relation, volume_species_indices):
 def block_statistics(abundances):
     """
     Calculates the mean and standard deviation for non-overlapping blocks.
-    W is the block size (e.g., 100).
     """
-    block_mean = np.mean(abundances, axis=0)
     block_std = np.std(abundances, axis=0)
     
-    return block_mean, block_std
+    return block_std
 
 def threshold_function(V: float) -> float:
     """
@@ -556,7 +552,16 @@ def threshold_function(V: float) -> float:
     threshold = predicted_sigma * (1 + margin)
     return threshold
 
-def gillespieProtocell(abundances, m, k_types, k, c, V, iterations, threshold):
+def gillespieProtocell(
+    abundances, 
+    m, 
+    k_types, 
+    k, 
+    c, 
+    V, 
+    iterations, 
+    threshold
+) -> tuple:
     times = np.array([0.0], dtype=float)
     V = np.array([float(V)], dtype=float)
     
@@ -576,28 +581,30 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations, threshold):
     
     initial_total_abundance = np.sum(abundances[0, volume_species_indices])
     abundance_v_relation = initial_total_abundance / V[0]
+    
+    # Calculate initial concentration for food, as this will be constant throughout the simulation
     if non_volume_species_indices.any != None:
         initial_non_volume_conc = abundances[0, non_volume_species_indices] / V[0]      
     
+    # now we filter the reactions -> keeping only those that are not type 4
     no_type_4_reaction_indices = np.where(k_types != '4')[0]
-
-    # filtering to delete the reaction to identify the food species:
     reactions_to_keep = np.zeros(m, dtype= bool)
     reactions_to_keep[no_type_4_reaction_indices]= True
+    
     # variables to update:
     k_types = k_types[reactions_to_keep]
     c = c[reactions_to_keep]
     m = np.shape(c)[0] # number of reactions must be updated
-
     c_reactants = reactants(c) # c matrix with only reactivos
-    # inizialization:
+    
+    # inizialization of gillespie algorithm
     h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
     a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
     reactions_to_update = update_a(c)
 
     if len(no_type_4_reaction_indices) != len(k):
-        raise Exception('El número de constantes de reacción es diferente al número de\
-            reacciones')
+        raise Exception(
+            'El número de constantes de reacción es diferente al número de reacciones')
     
     n = 0
     counter = 0
@@ -641,10 +648,11 @@ def gillespieProtocell(abundances, m, k_types, k, c, V, iterations, threshold):
             new_abundances[non_volume_species_indices] = np.round(initial_non_volume_conc * new_V)
             
         abundances = np.vstack((abundances, new_abundances))
-                
+
+        # stop criterion
         if n%500 == 0 and n > 2000:
             last_500_concentrations = (abundances[-500:,volume_species_indices].T/V[-500:]).T
-            mean, std = block_statistics(last_500_concentrations)
+            std = block_statistics(last_500_concentrations)
             
             if max(std) < threshold:
                 counter += 1
