@@ -3,3 +3,7 @@ a,b,cd,,ab,cd,5
 ab,cd,,a,b,cd,3
 ab,c,d,,ab,cd,5
 ab,cd,,ab,c,d,3
+,,,,,a,4
+,,,,,b,4
+,,,,,c,4
+,,,,,d,4

@@ -4,7 +4,6 @@ from random import random, seed
 from scipy.integrate import solve_ivp
 from numpy.linalg import matrix_rank
 
-seed(1)
 
 def read_file(file_name: str):
     '''
@@ -188,8 +187,7 @@ def chemistry(method: str, iterations:int, file: str,
     
     if len(initial_food) != len(species): # not enough initial abundances
         raise Exception(
-            'No se han definido el mismo numero de condiciones\
-                iniciales que de especies'
+        f'No se han definido el mismo numero de condiciones iniciales que de especies (# de especies = {len(species)})'
         )
     
     abundances[0, :] = initial_food
@@ -289,6 +287,10 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
         #h_m = 1
         h[i] = V
         
+    elif k_types[i] == '5':
+        x = abundance[c_reactants[i] == 1]
+        h[i] = np.prod(x)*(1/V)
+        
     # Get the a_m
     a[i] = h[i]*k[i]
 
@@ -325,8 +327,7 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
     """
     if m != len(k): # not enough catalytic constants
         raise Exception(
-            'No se ha definido el mismo numero de constantes\n\
-            de reaccion que de reacciones'
+        f'No se ha definido el mismo numero de constantes de reaccion que de reacciones (# de reacciones = {m})'
             )
     
     # --- INITIALIZATION ---
@@ -360,7 +361,7 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
     initial_total_abundance = np.sum(abundances[0, volume_species_indices])
     abundance_v_relation = initial_total_abundance / V[0]
 
-    # --- GILLESPIE ALGORITM ---
+    # --- GILLESPIE ALGORITHM ---
 
     for n in range(iterations):
         abundance = abundances[n]
@@ -427,8 +428,7 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, c):
     
     if m != len(k): # not enough catalytic constants
         raise Exception(
-            'No se ha definido el mismo numero de constantes\n\
-            de reaccion que de reacciones'
+            f'No se ha definido el mismo numero de constantes de reaccion que de reacciones (# de reacciones = {m})'
         )
     
     def rhs(t, X):
@@ -444,44 +444,6 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, c):
 
 
     return times, abundances, V
-
-def calculate_a_without4(a, i, k_types, abundance, c_reactants, h, k, V):
-    """
-    Calculates the probability of every possible reaction
-    given the quantity of each species, the volume, the reaction
-    type and the catalytic constant
-    
-    Input
-    -------
-    (a, k_types, abundance, c_reactants, h, k and V: 
-        Previously explained)
-    
-    i: iteration of a calculation (this function is used in a loop)
-        will be equivalent to the reaction number
-    
-    Returns
-    -------
-    a: probability of each reaction taking place
-    """
-    if k_types[i] == '1':
-        # h_m = X1
-        x = abundance[c_reactants[i] == 1]
-        h[i] = x
-
-    elif k_types[i] == '2':
-        # h_m = (1/2)*X1*(X1-1)
-        x = abundance[c_reactants[i] == 2]
-        h[i] = (1/2)*x*(x-1)*(1/V)
-
-    elif k_types[i] == '3':
-        # h_m = X1*X2
-        x = abundance[c_reactants[i] == 1]
-        h[i] = np.prod(x)*(1/V)
-    
-    # Get the a_m
-    a[i] = h[i]*k[i]
-
-    return a
 
 def get_non_volume_species_indices(k_types, c):
     """
@@ -611,7 +573,7 @@ def gillespieProtocell(
 
     if len(no_type_4_reaction_indices) != len(k):
         raise Exception(
-            'El número de constantes de reacción es diferente al número de reacciones')
+        f'El número de constantes de reacción es diferente al número de reacciones (# reacciones = {len(no_type_4_reaction_indices)})')
     
     n = 0
     counter = 0
@@ -620,11 +582,11 @@ def gillespieProtocell(
 
         if n != 0:
             for i in np.nditer(reactions_to_update[mu]):
-                a = calculate_a_without4(a, i, k_types, abundance, c_reactants, h, k, V[-1])
+                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
 
         else:
             for i in range(m):
-                a = calculate_a_without4(a, i, k_types, abundance, c_reactants, h, k, V[-1])
+                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
 
         # Get the a_0
         a0 = np.sum(a)
