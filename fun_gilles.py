@@ -200,11 +200,12 @@ def chemistry(method: str, iterations:int, file: str,
         # - quitar iterations de protocell
         # - dejar iterations solo en Gillespie y deterministic
         # iterations = kwargs.get('iterations', None) 
+        threshold = kwargs.get('threshold', None) 
         
         # if iterations is None:
         #     raise Exception("Gillespie method requires the 'iterations' parameter.")
         
-        abundances, times, V = gillespie(abundances, m, k_types, k, c, V, iterations)
+        abundances, times, V = gillespie(abundances, m, k_types, k, c, V, iterations, threshold)
 
     elif method == 'Deterministic': # deterministic algorithm
         
@@ -213,7 +214,7 @@ def chemistry(method: str, iterations:int, file: str,
         #     raise Exception("Deterministic method requires the 'iterations' parameter.")
         
         times, abundances, V = integrate_ODEs(reactions, k, V, abundances,
-                                            iterations, species, c)
+                                            iterations, c)
 
     elif method == 'Protocell': # estochastic algorithm
         threshold = kwargs.get('threshold', None) 
@@ -296,7 +297,7 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
 
     return a
 
-def gillespie(abundances, m, k_types, k, c, V, iterations):
+def gillespie(abundances, m, k_types, k, c, V, iterations, threshold):
     """
     Performs the Gillespie algorithm
     
@@ -362,7 +363,9 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
     abundance_v_relation = initial_total_abundance / V[0]
 
     # --- GILLESPIE ALGORITHM ---
-
+    if threshold == None: # if user does not define a specific threshold
+        threshold = threshold_function(V)
+    counter = 0
     for n in range(iterations):
         abundance = abundances[n]
 
@@ -395,8 +398,19 @@ def gillespie(abundances, m, k_types, k, c, V, iterations):
         abundances = np.vstack((abundances, abundance + c[mu]))
         times = np.append(times, times[-1] + tau)
         V = np.append(V, update_v_protocell(abundance, abundance_v_relation, volume_species_indices))
+        
+        if n%500 == 0 and n > 2000:
+            last_500_concentrations = (abundances[-500:,volume_species_indices].T/V[-500:]).T
+            std = block_statistics(last_500_concentrations)
+            
+            if max(std) < threshold:
+                counter += 1
+                if counter == V[0]/10:
+                    return abundances, times, V
+            else: 
+                counter = 0
 
-
+    print("Criterion for stop was # of iterations")
     return abundances, times, V
 
 def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
@@ -438,7 +452,9 @@ def integrate_ODEs(reactions, k, V, initial_abundance, iterations, c):
             dxdt = calculate_dxdt(dxdt, i, k_types, X, c_reactants, h, k, V)
         return c.T @ dxdt
     
-    sol = solve_ivp(rhs, [0, t_end], initial_abundance, method='BDF')
+    sol = solve_ivp(
+        rhs, [0, t_end], initial_abundance.reshape(-1), # makes sure the array is 1-dimensional
+        method='BDF')
     times = sol.t
     abundances = sol.y.T
 
