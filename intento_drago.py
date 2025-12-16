@@ -19,10 +19,10 @@ def barrido_k(k_n, k_values):
 
             for k_i in k_values:
                 k[k_n] = k_i
-                print(f"Starting simulation for k_2 = {k_i}")
+                print(f"Starting simulation for k_{k_n} = {k_i}")
                 abundances, times, volumes = chemistry(method, n_iterations, f,
                                         initial_food, k, V)
-                print(f"Simulation completed for k_2 = {k_i}")
+                print(f"Simulation completed for k_{k_n} = {k_i}")
 
                 results_k2 = {k_i:(abundances, times, volumes)}
                 pickle.dump(results_k2, file)
@@ -49,90 +49,97 @@ V = 1000
 initial_food = [1000]*4 + [0]*4 # initial molecules number
 
 
-cat_abundance = (np.linspace(7000, 27000, 41))
-print(cat_abundance)
-output_file = "barrido_ab0_k0_e2.pkl"
+# cat_abundance = (np.linspace(1e4, 1e7, 21))
+# print(cat_abundance)
+# output_file = "barrido_ab0_k0_e2.pkl"
 
-try:
-    with open(output_file, "ab") as file:
+# try:
+#     with open(output_file, "ab") as file:
 
-        for initial_cat in cat_abundance:
-            initial_food[4] = initial_cat
-            abundances, times, volumes = chemistry(method, n_iterations, f,
-                                        initial_food, k, V)
-            print(f"Simulation completed for [ab]0 = {initial_cat/V}")
-            results = {initial_cat/V:(abundances, times, volumes)}
-            pickle.dump(results, file)
-            file.flush()
+#         for initial_cat in cat_abundance:
+#             initial_food[4] = initial_cat
+#             print(f"Simulation started for [ab]0 = {initial_cat/V}")
+#             abundances, times, volumes = chemistry(method, n_iterations, f,
+#                                         initial_food, k, V)
+#             print(f"Simulation completed for [ab]0 = {initial_cat/V}")
+#             results = {initial_cat/V:(abundances, times, volumes)}
+#             pickle.dump(results, file)
+#             file.flush()
     
-except Exception as e:
-    print(f"An error has occured: {e}")
+# except Exception as e:
+#     print(f"An error has occured: {e}")
 
-finally: 
-    print("Simulation run completed")
+# finally: 
+#     print("Simulation run completed")
     
-# --- BARRIDO DE K_0 ---
+# # --- BARRIDO DE K_0 ---
 
-# Reaction constants:
-k = [1]*8 # len(k)= # de reacciones
-# Volume:
-V = 1000
-initial_food = [1000]*4 + [500]*2 + [0]*2 # initial molecules number
-k_change = np.logspace(-5,-3,5)
-print(k_change)
-output_file = "barrido_k0_stream.pkl"
+# # Reaction constants:
+# k = [1]*8 # len(k)= # de reacciones
+# # Volume:
+# V = 1000
+# initial_food = [1000]*4 + [500]*2 + [0]*2 # initial molecules number
+# k_change = np.logspace(-5,-3,5)
+# print(k_change)
+# output_file = "barrido_k0_stream.pkl"
 
-try:
-    with open(output_file, "ab") as file:
-        for k_i in k_change:
-            k[0] = k_i
-            abundances, times, volumes = chemistry(method, n_iterations, f,
-                                    initial_food, k, V)
-            print(f"Simulation completed for k_0 = {k_i}")
-            results_k0 = {k_i : (abundances, times, volumes)}
-            pickle.dump(results_k0, file)
-            file.flush()
+# try:
+#     with open(output_file, "ab") as file:
+#         for k_i in k_change:
+#             k[0] = k_i
+#             abundances, times, volumes = chemistry(method, n_iterations, f,
+#                                     initial_food, k, V)
+#             print(f"Simulation completed for k_0 = {k_i}")
+#             results_k0 = {k_i : (abundances, times, volumes)}
+#             pickle.dump(results_k0, file)
+#             file.flush()
             
-except Exception as e:
-    print(f"An error has occured: {e}")
+# except Exception as e:
+#     print(f"An error has occured: {e}")
 
-finally: 
-    print("Simulation run completed")
-# --- BARRIDO DE K_2 ---
+# finally: 
+#     print("Simulation run completed")
+# # --- BARRIDO DE K_2 ---
 
-# Reaction constants:
-k = [1]*8 # len(k)= # de reacciones
-# Volume:
-V = 1000
-initial_food = [1000]*4 + [500]*2 + [0]*2 # initial molecules number
-final_volume = []
-k_change = np.logspace(-5,-3,5)
-print(k_change)
-output_file = "barrido_k2_stream.pkl"
+# # Reaction constants:
+# k = [1]*8 # len(k)= # de reacciones
+# # Volume:
+# V = 1000
+# initial_food = [1000]*4 + [500]*2 + [0]*2 # initial molecules number
+# final_volume = []
+# k_change = np.logspace(-5,-3,5)
+# print(k_change)
+# output_file = "barrido_k2_stream.pkl"
 
-try: 
-    with open(output_file, "ab") as file:
+# try: 
+#     with open(output_file, "ab") as file:
 
-        for k_i in k_change:
-            k[2] = k_i
-            print(f"Starting simulation for k_2 = {k_i}")
-            abundances, times, volumes = chemistry(method, n_iterations, f,
-                                    initial_food, k, V)
-            print(f"Simulation completed for k_2 = {k_i}")
+#         for k_i in k_change:
+#             k[2] = k_i
+#             print(f"Starting simulation for k_2 = {k_i}")
+#             abundances, times, volumes = chemistry(method, n_iterations, f,
+#                                     initial_food, k, V)
+#             print(f"Simulation completed for k_2 = {k_i}")
 
-            results_k2 = {k_i:(abundances, times, volumes)}
-            pickle.dump(results_k2, file)
+#             results_k2 = {k_i:(abundances, times, volumes)}
+#             pickle.dump(results_k2, file)
 
-            file.flush()
-except Exception as e:
-    print(f"An error has occured: {e}")
+#             file.flush()
+# except Exception as e:
+#     print(f"An error has occured: {e}")
 
-finally: 
-    print("Simulation run completed")
+# finally: 
+#     print("Simulation run completed")
 
 
 # -- BARRIDO RESTO DE K ---
-k_change = np.logspace(-5,7,24)
+k = [1]*8 # len(k)= # de reacciones
+# # Volume:
+V = 1000
+initial_food = [1000]*4 + [500]*2 + [0]*2 # initial molecules number
+k_change = np.logspace(-5,7,25)
+print(k_change)
 for k_ns in[1,3,4,5,6,7]:
+    k = [1]*8
     print(f"STARTING SIMULATIONS FOR K_{k_ns}")
     barrido_k(k_ns, k_change)
