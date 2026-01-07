@@ -349,9 +349,9 @@ def gillespie(abundances, m, k_types, k, c, V, iterations, threshold):
     # --- VOLUME CALCULATION ---
     
     non_volume_species_indices = get_non_volume_species_indices(k_types, c)
-    # Calculate initial abundance_v_relation based on the contributing species
+    # calculate initial abundance_v_relation based on the contributing species
     all_species_indices = np.arange(np.shape(c)[1])
-    # The species that contribute are the ones that are not on non_volume_species
+    # the species that contribute are the ones that are not on non_volume_species
     # np.setdiff1d returns the different values in two arrays --> 
     # in this case the values will be the indices from species that affect the protocell volume
     volume_species_indices = np.setdiff1d(all_species_indices, non_volume_species_indices)
@@ -363,10 +363,13 @@ def gillespie(abundances, m, k_types, k, c, V, iterations, threshold):
     abundance_v_relation = initial_total_abundance / V[0]
 
     # --- GILLESPIE ALGORITHM ---
+    
     if threshold == None: # if user does not define a specific threshold
-        threshold = threshold_function(V)
+        threshold = threshold_function(V, margin= 0.5)
+        
     counter = 0
-    for n in range(iterations):
+    
+    for n in range(int(iterations)):
         abundance = abundances[n]
 
         if n != 0:
@@ -523,13 +526,12 @@ def block_statistics(abundances):
     
     return block_std
 
-def threshold_function(V: float) -> float:
+def threshold_function(V: float, margin: float) -> float:
     """
     Predicts the required SD threshold for a new volume V_new.
     Threshold = (A / V_new^m) * (1 + margin)
     """
-    A_fit, m_fit = 6.595, -0.987
-    margin = 0.5
+    A_fit, m_fit = 8.7, -1
     if V <= 0:
         raise ValueError("Volume must be positive.")
         
@@ -551,7 +553,7 @@ def gillespieProtocell(
     V = np.array([float(V)], dtype=float)
     
     if threshold == None: # if user does not define a specific threshold
-        threshold = threshold_function(V)
+        threshold = threshold_function(V, margin= 0.5)
     
     non_volume_species_indices = get_non_volume_species_indices(k_types, c)
     # Calculate initial abundance_v_relation based on the contributing species
