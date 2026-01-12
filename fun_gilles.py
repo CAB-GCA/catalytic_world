@@ -348,18 +348,8 @@ def gillespie(abundances, m, k_types, k, c, V, iterations, threshold):
     
     # --- VOLUME CALCULATION ---
     
-    non_volume_species_indices = get_non_volume_species_indices(k_types, c)
-    # calculate initial abundance_v_relation based on the contributing species
-    all_species_indices = np.arange(np.shape(c)[1])
-    # the species that contribute are the ones that are not on non_volume_species
-    # np.setdiff1d returns the different values in two arrays --> 
-    # in this case the values will be the indices from species that affect the protocell volume
-    volume_species_indices = np.setdiff1d(all_species_indices, non_volume_species_indices)
-    
-    if len(volume_species_indices) == 0:
-        raise Exception("No species are products of a non type '4' reaction, so volume cannot be calculated.")
-    
-    initial_total_abundance = np.sum(abundances[0, volume_species_indices])
+    initial_total_abundance = np.sum(abundances[0, :])
+    volume_species_indices = range(0, abundances[0, :].shape[0])
     abundance_v_relation = initial_total_abundance / V[0]
 
     # --- GILLESPIE ALGORITHM ---
