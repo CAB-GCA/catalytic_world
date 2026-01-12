@@ -3,7 +3,6 @@ import sys
 sys.path.append('..')  # allow importing from parent directory
 from fun_gilles import *
 import pickle
-import pandas as pd
 
 def barrido_k(k_n, k_values, num_replicates):
     # Reaction constants:

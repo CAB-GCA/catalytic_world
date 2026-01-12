@@ -626,6 +626,11 @@ def gillespieProtocell(
         
         new_abundances = abundances[n] + c[mu]
         times = np.append(times, times[-1] + tau)
+        if any(n < 0 for n in new_abundances):
+            print(f"Warning: Negative molecules detected at time {times[-1]}!")
+            # Force to zero as a safety measure
+            new_abundances = [max(0, n) for n in new_abundances]
+            new_abundances = np.array(new_abundances)
         # actualizar el volumen en función de la reacción que haya tocado
         new_V = update_v_protocell(new_abundances, abundance_v_relation, volume_species_indices)
         V = np.append(V, new_V)
