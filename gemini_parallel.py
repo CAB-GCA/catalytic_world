@@ -11,7 +11,7 @@ from fun_gilles import *
 def run_single_simulation(args):
     method, n_iterations, f, initial_food, k, V = args
     # Ensure threshold is handled
-    return chemistry(method, n_iterations, f, initial_food, k, V, threshold=0)
+    return chemistry(method, n_iterations, f, initial_food, k, V)
 
 def barrido_k(k_n, k_values, num_replicates, processes):
     V = 100
@@ -74,8 +74,12 @@ if __name__ == "__main__":
     
     # --- BARRIDO DE CONDICIONES INICIALES ---
     for k_1 in [1e-4, 1, 1e4]:
-        cat_abundance = np.linspace(0, 10, 21)* 100
-        barrido_ab0(1, k_1, cat_abundance, n_reps, n_cpus)
+        if k_1 == 1e-4:
+            cat_abundance = np.linspace(2.5, 10, 16)* 100
+            barrido_ab0(1, k_1, cat_abundance, n_reps, n_cpus)
+        else:
+            cat_abundance = np.linspace(0, 10, 21)* 100
+            barrido_ab0(1, k_1, cat_abundance, n_reps, n_cpus)
 
     # -- BARRIDO RESTO DE K ---
     k_change = np.logspace(-5, 7, 25)
