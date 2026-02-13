@@ -65,7 +65,7 @@ def barrido_ab0(k_n, k_val, cat_abundance, num_replicates, processes):
 # Global parameters
 f = '../examples/reactions_autocat.txt'
 n_reps = 10
-n_iterations = 1e6
+n_iterations = 1e7
 method = "Protocell"
 
 if __name__ == "__main__":
@@ -73,13 +73,9 @@ if __name__ == "__main__":
     n_cpus = int(os.getenv('SLURM_CPUS_PER_TASK', 1))
     
     # --- BARRIDO DE CONDICIONES INICIALES ---
-    for k_1 in [1e-4, 1, 1e4]:
-        if k_1 == 1e-4:
-            cat_abundance = np.linspace(2.5, 10, 16)* 100
-            barrido_ab0(1, k_1, cat_abundance, n_reps, n_cpus)
-        else:
-            cat_abundance = np.linspace(0, 10, 21)* 100
-            barrido_ab0(1, k_1, cat_abundance, n_reps, n_cpus)
+    for k_1 in [1e-4]:
+        cat_abundance = np.linspace(0, 100, 21)* 100
+        barrido_ab0(1, k_1, cat_abundance, n_reps, n_cpus)
 
     # -- BARRIDO RESTO DE K ---
     k_change = np.logspace(-5, 7, 25)

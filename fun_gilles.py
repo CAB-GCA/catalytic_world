@@ -289,8 +289,10 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
         h[i] = V
         
     elif k_types[i] == '5':
+        # third order
         x = abundance[c_reactants[i] == 1]
-        h[i] = np.prod(x)*(1/V)
+        h[i] = np.prod(x)*(1/V**2)
+        
         
     # Get the a_m
     a[i] = h[i]*k[i]
@@ -638,7 +640,7 @@ def gillespieProtocell(
             
             if max(std) < threshold:
                 counter += 1
-                if counter == V[0]/10:
+                if counter == 100:
                     return abundances, times, V
             else: 
                 counter = 0

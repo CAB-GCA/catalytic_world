@@ -1,31 +1,57 @@
+from datetime import datetime
 import numpy as np
-import matplotlib.pyplot as plt
+import sys
+import os
+import pickle
+# Get the directory where your current script is located
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Move up one level to 'catalytic_world'
+parent_dir = os.path.dirname(current_dir)
+
+# Add it to the path
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 from fun_gilles import *
 
-# Initialization:
-file = "reactions_XYC_food_XY.txt" # M reactions
-method = "Gillespie" # Gillespie or Deterministic
-
-# Reaction constants:
-k = [1,0,1,0]+ [1e-2] # len(k)= # de reacciones
-# Volume:
-V = 1000
-
-# condiciones iniciales
-initial_food = [100,0,0,0,0] # initial molecules number
-
-# obtener reacciones y especies:
-reactions = read_file(file)
-species = obtain_species(reactions)
-n_iterations= 10000 # In the deterministic mode n_iterations refers to the t_end
 
 
-abundances, times, V = chemistry(method, n_iterations, reactions,
-                                initial_food, k, V)
+nombre_archivo = "_".join(str(datetime.now()).split()).split(":") # ":" character is not accepted in a file name
+nombre_archivo = "".join(nombre_archivo[:-1])
+nombre_archivo = "simulation" + nombre_archivo + ".pkl"
 
-print(f"Parameters used for simulation:\n\
-Initial concentrations:\nX_0={initial_food[1]}\nY_0={initial_food[2]}\n\
-C_0={initial_food[0]}\n\
-k_a = {k[0]}; k_a_r = {k[1]}\n\
-k_b= {k[2]}, k_b_r={k[3]}\n\
-# iterations = {n_iterations}")
+
+intermediates = "./examples/reactions_autocat.txt"
+
+# simulation
+method = "Protocell"
+initial_species = [100]*4 + [50]*2 +[0]*2
+k = [1]*8
+k[0] = 1e-4
+k[2] = 1e6
+V = 100
+iterations = 1e6
+sp_intermediates = obtain_species(read_file(intermediates))
+
+try:
+    with open(nombre_archivo, "ab") as file:
+
+        a, t, v = chemistry(method,
+                            iterations,
+                            intermediates,
+                            initial_species,
+                            k,
+                            V,
+                            threshold= 0)
+        results = (a,t,v)
+        pickle.dump(results, file)
+        print(f"Simulation completed and saved.")
+    
+except Exception as e:
+    print(f"An error has occured: {e}")
+    
+finally:
+    print("Simulations completed")
+    
+
