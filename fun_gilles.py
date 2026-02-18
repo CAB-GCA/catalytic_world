@@ -153,7 +153,7 @@ def chemistry(method: str, iterations:int, file: str,
     
     Input
     ----------
-    method: "Gillespie" or "Protocell" for estochastic simulations or 
+    method: "Gillespie", "Protocell" or "Division" for stochastic simulations or 
         "Deterministic"
     iterations: for stochastic simulations iterations will be the number of 
         performed iterations of the algorithm
@@ -221,6 +221,12 @@ def chemistry(method: str, iterations:int, file: str,
         
         abundances, times, V = gillespieProtocell(abundances, m, k_types, k, c, 
                                                 V, iterations, threshold)
+    
+    elif method == 'Division': # estochastic algorithm
+        threshold = kwargs.get('threshold', None) 
+        
+        abundances, times, V = gillespieProtocell_withdivision(abundances, m, k_types, k, c, 
+                                                               V, iterations, threshold)
     
     return abundances, times, V
 
@@ -562,7 +568,7 @@ def gillespieProtocell(
     abundance_v_relation = initial_total_abundance / V[0]
     
     # Calculate initial concentration for food, as this will be constant throughout the simulation
-    if non_volume_species_indices.any != None:
+    if non_volume_species_indices.size > 0:
         initial_non_volume_conc = abundances[0, non_volume_species_indices] / V[0]      
     
     # now we filter the reactions -> keeping only those that are not type 4
@@ -579,7 +585,6 @@ def gillespieProtocell(
     # inizialization of gillespie algorithm
     h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
     a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
-    reactions_to_update = update_a(c)
 
     if len(no_type_4_reaction_indices) != len(k):
         raise Exception(
@@ -590,13 +595,8 @@ def gillespieProtocell(
     while n < iterations:
         abundance = abundances[n]
 
-        if n != 0:
-            for i in np.nditer(reactions_to_update[mu]):
-                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
-
-        else:
-            for i in range(m):
-                a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
+        for i in range(m): # because the volume is changing, all reaction probabilities need to be updated
+            a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
 
         # Get the a_0
         a0 = np.sum(a)
@@ -649,3 +649,134 @@ def gillespieProtocell(
 
     print("Criterion for stop was # of iterations")
     return abundances, times, V
+
+
+def gillespieProtocell_withdivision(
+    abundances, 
+    m, 
+    k_types, 
+    k, 
+    c, 
+    V, 
+    iterations, 
+    threshold
+) -> tuple:
+    
+    times = np.array([0.0], dtype=float)
+    V = np.array([float(V)], dtype=float)
+    
+    if threshold == None: # if user does not define a specific threshold
+        threshold = threshold_function(V, margin= 0.5)
+    
+    non_volume_species_indices = get_non_volume_species_indices(k_types, c)
+    # Calculate initial abundance_v_relation based on the contributing species
+    all_species_indices = np.arange(np.shape(c)[1])
+    # The species that contribute are the ones that are not on non_volume_species
+    # np.setdiff1d returns the different values in two arrays --> 
+    # in this case the values will be the indices from species that affect the protocell volume
+    volume_species_indices = np.setdiff1d(all_species_indices, non_volume_species_indices)
+    
+    if len(volume_species_indices) == 0:
+        raise Exception("No species are products of a non type '4' reaction, so volume cannot be calculated.")
+    
+    initial_total_abundance = np.sum(abundances[0, volume_species_indices])
+    abundance_v_relation = initial_total_abundance / V[0]
+    
+    # Calculate initial concentration for food, as this will be constant throughout the simulation
+    if non_volume_species_indices.size > 0:
+        initial_non_volume_conc = abundances[0, non_volume_species_indices] / V[0]      
+    
+    # now we filter the reactions -> keeping only those that are not type 4
+    no_type_4_reaction_indices = np.where(k_types != '4')[0]
+    reactions_to_keep = np.zeros(m, dtype= bool)
+    reactions_to_keep[no_type_4_reaction_indices]= True
+    
+    # variables to update:
+    k_types = k_types[reactions_to_keep]
+    c = c[reactions_to_keep]
+    m = np.shape(c)[0] # number of reactions must be updated
+    c_reactants = reactants(c) # c matrix with only reactivos
+    
+    # inizialization of gillespie algorithm
+    h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
+    a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
+
+    if len(no_type_4_reaction_indices) != len(k):
+        raise Exception(
+        f'El número de constantes de reacción es diferente al número de reacciones (# reacciones = {len(no_type_4_reaction_indices)})')
+    
+    n = 0
+    counter = 0
+    mu = 0
+    division = False
+    while n < iterations:
+        abundance = abundances[n]
+        
+        # if the initial volume has been duplicated, the protocell will divide
+        if V[-1] > V[0] * 2:
+            division = True
+
+        for i in range(m):
+            a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
+
+        # Get the a_0
+        a0 = np.sum(a)
+        if a0 == 0:
+            print("La probabilidad total es 0 !!")
+            return abundances, times, V
+
+        # Get two random numbers, r1 and r2        
+        r1 = random()
+        r2 = random()
+
+        # Get mu and tau
+        tau = (1/a0) * math.log(1/r1)
+
+        sum_a = np.cumsum(a)
+        for mu in range(len(a)):
+            if sum_a[mu] >= r2*a0:
+                break
+        
+        new_abundances = abundances[n] + c[mu]
+        times = np.append(times, times[-1] + tau)
+        
+        if any(n < 0 for n in new_abundances):
+            print(f"Warning: Negative molecules detected at time {times[-1]}!")
+            # Force to zero as a safety measure
+            new_abundances = [max(0, n) for n in new_abundances]
+            new_abundances = np.array(new_abundances)
+        
+        # actualizar el volumen en función de la reacción que haya tocado
+        new_V = update_v_protocell(new_abundances, abundance_v_relation, volume_species_indices)
+        
+        # if the initial volume has been duplicated, the protocell will divide
+        if division == True:
+            new_V = new_V / 2
+            new_abundances = np.round(new_abundances / 2)
+            division = False
+        
+        V = np.append(V, new_V)
+        if non_volume_species_indices.any != None:
+            # now there's more/less food that can be inside that volume
+            new_abundances[non_volume_species_indices] = np.round(initial_non_volume_conc * new_V)
+            
+        abundances = np.vstack((abundances, new_abundances))
+        
+        # stop criterion
+        if n%500 == 0 and n > 2000:
+            last_500_concentrations = (abundances[-500:,volume_species_indices].T/V[-500:]).T
+            std = block_statistics(last_500_concentrations)
+            
+            if max(std) < threshold:
+                counter += 1
+                if counter == 100:
+                    return abundances, times, V
+            else: 
+                counter = 0
+        
+        n += 1
+
+    print("Criterion for stop was # of iterations")
+    return abundances, times, V
+
+
