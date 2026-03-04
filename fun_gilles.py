@@ -119,7 +119,7 @@ def c_matrix(reactions, species, header):
     return c
 
 
-def reactants(c):
+def reactants(file):
     """
     Input
     ----------
@@ -130,7 +130,23 @@ def reactants(c):
     c_reactants: a C matrix with only the reactant species for each
     reaction
     """
-    c_reactants = abs(np.where(c < 0, c, 0))
+    reactions = read_file(file)
+    species = obtain_species(reactions)
+    header = get_header(file)
+    m = calculate_m(reactions) # number of reactions
+    n_species = len(species) # number of species
+    c_reactants = np.zeros(shape=(m, n_species)) # c matrix: a row for each reaction and a column for each species
+    
+    for i in range(m):
+        reaction = reactions[i, :] 
+        for j in range(len(header)):
+            # each j will be a species or empty ('')
+            if reaction[j] in species:  # If the element is different from '' it will be in species 
+                                        # this eliminates empty species
+                # Get the index of the element in the list of species (to keep it coherent)
+                index = list(species).index(reaction[j])
+                if header[j].startswith("r"):  # If it is a reactant
+                    c_reactants[i, index] += 1
     return c_reactants
 
 
@@ -184,6 +200,7 @@ def chemistry(method: str, iterations:int, file: str,
     k_types = reactions[:, -1] # monomolecular, bimolecular...
     m = calculate_m(reactions) # number of reactions
     abundances = np.zeros((1, np.shape(species)[0])) # initialization of abundances
+    c_reactants = reactants(file)
     
     if len(initial_food) != len(species): # not enough initial abundances
         raise Exception(
@@ -205,7 +222,8 @@ def chemistry(method: str, iterations:int, file: str,
         # if iterations is None:
         #     raise Exception("Gillespie method requires the 'iterations' parameter.")
         
-        abundances, times, V = gillespie(abundances, m, k_types, k, c, V, iterations, threshold)
+        abundances, times, V = gillespie(abundances, m, k_types, k, c, 
+                                         V, iterations, c_reactants, threshold)
 
     elif method == 'Deterministic': # deterministic algorithm
         
@@ -214,13 +232,13 @@ def chemistry(method: str, iterations:int, file: str,
         #     raise Exception("Deterministic method requires the 'iterations' parameter.")
         
         times, abundances, V = integrate_ODEs(reactions, k, V, abundances,
-                                            iterations, c)
+                                            iterations, c, c_reactants)
 
     elif method == 'Protocell': # estochastic algorithm
         threshold = kwargs.get('threshold', None) 
         
         abundances, times, V = gillespieProtocell(abundances, m, k_types, k, c, 
-                                                V, iterations, threshold)
+                                                V, iterations, c_reactants, threshold)
     
     elif method == 'Division': # estochastic algorithm
         threshold = kwargs.get('threshold', None) 
@@ -305,7 +323,7 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
 
     return a
 
-def gillespie(abundances, m, k_types, k, c, V, iterations, threshold):
+def gillespie(abundances, m, k_types, k, c, V, iterations, c_reactants, threshold):
     """
     Performs the Gillespie algorithm
     
@@ -340,10 +358,6 @@ def gillespie(abundances, m, k_types, k, c, V, iterations, threshold):
             )
     
     # --- INITIALIZATION ---
-    
-    # Get h (one per reaction)
-    c_reactants = reactants(c) # c matrix with only reactivos
-    # inizialization:
     h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
     a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
     times = np.array([0.0], dtype=float)
@@ -435,8 +449,7 @@ def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
 
     return dxdt
 
-def integrate_ODEs(reactions, k, V, initial_abundance, iterations, c):
-    c_reactants = reactants(c)
+def integrate_ODEs(reactions, k, V, initial_abundance, iterations, c, c_reactants):
     k_types = reactions[:, -1]
     m = calculate_m(reactions)
     t_end = iterations
@@ -529,7 +542,7 @@ def threshold_function(V: float, margin: float) -> float:
     Predicts the required SD threshold for a new volume V_new.
     Threshold = (A / V_new^m) * (1 + margin)
     """
-    A_fit, m_fit = 8.7, -1
+    A_fit, m_fit = 0.374, -0.93
     if V <= 0:
         raise ValueError("Volume must be positive.")
         
@@ -545,6 +558,7 @@ def gillespieProtocell(
     c, 
     V, 
     iterations, 
+    c_reactants,
     threshold
 ) -> tuple:
     times = np.array([0.0], dtype=float)
@@ -580,7 +594,6 @@ def gillespieProtocell(
     k_types = k_types[reactions_to_keep]
     c = c[reactions_to_keep]
     m = np.shape(c)[0] # number of reactions must be updated
-    c_reactants = reactants(c) # c matrix with only reactivos
     
     # inizialization of gillespie algorithm
     h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
@@ -659,6 +672,7 @@ def gillespieProtocell_withdivision(
     c, 
     V, 
     iterations, 
+    c_reactants,
     threshold
 ) -> tuple:
     
@@ -695,8 +709,7 @@ def gillespieProtocell_withdivision(
     k_types = k_types[reactions_to_keep]
     c = c[reactions_to_keep]
     m = np.shape(c)[0] # number of reactions must be updated
-    c_reactants = reactants(c) # c matrix with only reactivos
-    
+        
     # inizialization of gillespie algorithm
     h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
     a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
