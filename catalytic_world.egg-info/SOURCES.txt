@@ -1,0 +1,7 @@
+README.md
+fun_gilles.py
+pyproject.toml
+catalytic_world.egg-info/PKG-INFO
+catalytic_world.egg-info/SOURCES.txt
+catalytic_world.egg-info/dependency_links.txt
+catalytic_world.egg-info/top_level.txt

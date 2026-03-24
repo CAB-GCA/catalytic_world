@@ -296,7 +296,7 @@ def calculate_a(a, i, k_types, abundance, c_reactants, h, k, V):
     if k_types[i] == '1':
         # h_m = X1
         x = abundance[c_reactants[i] == 1]
-        h[i] = x
+        h[i] = x[0]
 
     elif k_types[i] == '2':
         # h_m = (1/2)*X1*(X1-1)
