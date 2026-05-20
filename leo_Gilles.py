@@ -28,8 +28,7 @@ intermediates = "./examples/reactions_autocat.txt"
 method = "Protocell"
 initial_species = [100]*4 + [50]*2 +[0]*2
 k = [1]*8
-k[0] = 1e-4
-k[2] = 1e6
+
 V = 100
 iterations = 1e6
 sp_intermediates = obtain_species(read_file(intermediates))

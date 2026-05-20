@@ -44,7 +44,6 @@ for i in volume_factor:
 plt.figure(figsize=(5,4))
 plt.plot(volumes, iterations_count, marker='o', linestyle='-', color='teal', linewidth=2)
 
-plt.title("Computational Cost vs. System Size", fontsize=14)
 plt.xlabel("Volume ($V$)", fontsize=12)
 plt.ylabel("Number of Iterations (Reactions)", fontsize=12)
 plt.grid(True, which="both", ls="--", alpha=0.5)
@@ -77,13 +76,12 @@ predicted_n = predict_iterations(example_v)
 print(f"\nPredicted iterations for Volume {example_v}: {predicted_n}")
 
 # 4. Visualization
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(5,4))
 plt.scatter(x, y, color='teal', label='Simulated Data')
-plt.plot(x, slope*x + intercept, color='crimson', label=f'Fit: y={slope:.2f}x + {intercept:.2f}')
+plt.plot(x, slope*x + intercept, color='crimson', label=f'Fit: y={slope}x + {intercept}')
 
 plt.xlabel('Volume (V)')
 plt.ylabel('Total Iterations')
-plt.title('Predicting Simulation Cost via Linear Regression')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.show()
