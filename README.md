@@ -2,7 +2,7 @@
 
 This repository contains the computational framework developed to simulate the chemical evolution and physical growth of volume-variable protocells. 
 
-Specifically, this project investigates the kinetic requirements for the emergence and stability of early self-replicating chemical systems, focusing on the dynamics of a **minimal autocatalytic cycle**. The framework compares explicit multi-step chemical networks involving catalytic intermediates against widely used simplified third-order approximations, demonstrating the critical boundaries of these approximations in prebiotic chemistry.
+Specifically, this project investigates the kinetic requirements for the emergence and growth of early self-replicating chemical systems, focusing on the dynamics of a **minimal autocatalytic cycle**. The framework compares explicit multi-step chemical networks involving catalytic intermediates against widely used simplified third-order approximations, demonstrating the critical boundaries of these approximations in prebiotic chemistry.
 
 ## Features
 
@@ -11,17 +11,26 @@ Specifically, this project investigates the kinetic requirements for the emergen
 
 ## Repository Structure
 
+
 ```text
 catalytic_world/
 │
-├── src/
-│   ├── plotting.py              # Visualization suite for time evolution and parameter sweeps
-│   └── fun_gilles.py            # Stochastic simulation algorithms (Gillespie) 
+├── src/                         # Core computational and visualization modules
+│   ├── fun_gilles.py            # Stochastic simulation algorithms (Gillespie)
+│   └── plotting.py              # Visualization
 │
-├── kinetic_equivalence.py       # Main script to compare deterministic third-order vs. intermediate models
+├── simulations/                 # Main execution scripts for experiments
+│   ├── kinetic_models_comparison.py # Compares deterministic 3rd-order vs intermediate models
+│   ├── ab0_sweep.py             # Catalyst initial concentration sweeps
+│   ├── k_sweep.py               # 1D kinetic parameter sweeps
+│   ├── k_sweep_2d.py            # 2D kinetic parameter sweeps (Alpha / R^2 heatmaps)
+│   └── xyc_sweeps.py            # Sweeps for the XYC intermediate catalytic association
+│
+├── examples/                    # Reaction network definition files (.txt)
 │
 ├── figures_TFM/                 # Generated output directory for thesis figures
 ├── figures_internship/          # Generated output directory for preliminary report figures
+├── data_archive/                # Output directory for saved .pkl simulation results (Git ignored)
 │
 ├── requirements.txt             # Python dependencies
 └── README.md                    # Project documentation
