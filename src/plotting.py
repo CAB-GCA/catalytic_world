@@ -48,8 +48,8 @@ def plot_internship_abundances(times, abundances, species, fig_name=None):
     
     if fig_name is not None:
         import os
-        os.makedirs("figures_internship", exist_ok=True)
-        plt.savefig(f"figures_internship/{fig_name}.png", dpi=300)
+        os.makedirs("../figures_internship", exist_ok=True)
+        plt.savefig(f"../figures_internship/{fig_name}.png", dpi=300)
     plt.show()
 
 
@@ -80,8 +80,8 @@ def plot_internship_conc_and_vol(times, abundances, volumes, species, fig_name=N
     
     if fig_name is not None:
         import os
-        os.makedirs("figures_internship", exist_ok=True)
-        plt.savefig(f"figures_internship/{fig_name}.png", dpi=300)
+        os.makedirs("../figures_internship", exist_ok=True)
+        plt.savefig(f"../figures_internship/{fig_name}.png", dpi=300)
     plt.show()
 
 def plot_time_evolution(times, abundances, volumes, species_indices, custom_labels, title="Time Evolution", color_map=None):
@@ -170,7 +170,7 @@ def save_figure(fig, filename):
     """
     Standardized saving function to ensure no figures are cut off.
     """
-    fig.savefig(f"figures_TFM/{filename}", bbox_inches='tight', dpi=300)
+    fig.savefig(f"../figures_TFM/{filename}", bbox_inches='tight', dpi=300)
     plt.close(fig)
     
     
@@ -318,8 +318,8 @@ def plot_combined_AB(results_list, xlim=None, ylim=None, lim=None, rep=0, fig_na
         if ylim: ax_vol.set_ylim(ylim)
             
     if fig_name:
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{fig_name}.png", dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{fig_name}.png", dpi=300)
         
     plt.show()
     
@@ -415,8 +415,8 @@ def plot_concentration_evolution(times, abundances, volumes, species, fig_name=N
         
     if fig_name is not None:
         import os
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{fig_name}.png", dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{fig_name}.png", dpi=300)
     plt.show()
 
 def plot_comparison_concentration(deterministic, stochastic, species, fig_name=None, xlim=None):
@@ -446,8 +446,8 @@ def plot_comparison_concentration(deterministic, stochastic, species, fig_name=N
         ax.set_xlim((0, xlim))
     if fig_name is not None:
         import os
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{fig_name}.png", dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{fig_name}.png", dpi=300)
     plt.show()
 
 def plot_comparison_conc_and_vol(deterministic, stochastic, species, fig_name=None, xlim=None):
@@ -487,8 +487,8 @@ def plot_comparison_conc_and_vol(deterministic, stochastic, species, fig_name=No
         
     if fig_name is not None:
         import os
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{fig_name}.png", dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{fig_name}.png", dpi=300)
     plt.show()
 
 
@@ -538,8 +538,8 @@ def plot_precalculated_alpha(alpha_grid, k_values, k_in, k_out, min_log=-5, max_
     plt.tick_params(axis='both', labelsize=tick_fs)
     
     if figname:
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
     plt.tight_layout()
     plt.show()
 
@@ -576,8 +576,8 @@ def plot_r2_map(r2_grid, k_values, k_in, k_out, min_log=-5, max_log=7, figname=N
     plt.tick_params(axis='both', labelsize=tick_fs)
     
     if figname:
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
     plt.tight_layout()
     plt.show()
 
@@ -650,8 +650,8 @@ def plot_both_2d_sweeps(alpha_grid, r2_grid, k_values, k_in, k_out, min_log=-np.
 
     plt.tight_layout()
     if figname:
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
     plt.show()
     
 
@@ -773,8 +773,8 @@ def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=N
 
     if figname:
         import os
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{figname}.png", dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{figname}.png", dpi=300)
         
     plt.show()
     
@@ -838,8 +838,8 @@ def plot_deterministic_dual_comparison(t_to, conc_to, v_to, species_to,
     axes[0, 1].legend(handles=handles, loc='upper left', bbox_to_anchor=(1.05, 1.05), fontsize=legend_fs)
     
     if figname:
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{figname}.png", dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{figname}.png", dpi=300)
     plt.show()
 
 
@@ -880,6 +880,6 @@ def plot_volume_sweep_dual_comparison(results_to, results_int_eq, results_int_br
                    fontsize=legend_fs-2, title=r"$k_1^{T}$ and $k_{eff}^{Int}$", title_fontsize=legend_fs-1)
 
     if figname:
-        os.makedirs("figures_TFM", exist_ok=True)
-        plt.savefig(f"figures_TFM/{figname}.png", dpi=300)
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{figname}.png", dpi=300)
     plt.show()

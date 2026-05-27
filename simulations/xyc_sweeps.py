@@ -97,7 +97,7 @@ if __name__ == "__main__":
     plt.tick_params(axis='both',  labelsize=13)
     plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(nbins=6))
     plt.legend(loc='center left',bbox_to_anchor=(1., 0.5), title="$k_{ar}$", fontsize=11, title_fontsize=12)
-    plt.title("(B)", loc="left",x = -0.05, y=1, pad=10, fontsize=16)
+    plt.title("(A)", loc="left",x = -0.05, y=1, pad=10, fontsize=16)
     plt.tight_layout()
     plt.savefig("figures_TFM/gillespie_equilibrium_errors_kar.png", bbox_inches='tight', dpi=300)
     plt.show()
