@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from random import random, seed
+from random import random
 from scipy.integrate import solve_ivp
 from numpy.linalg import matrix_rank
 
@@ -66,23 +66,6 @@ def obtain_species(reactions):
     return species
 
 
-def calculate_m(reactions):
-    '''
-
-    Input
-    ----------
-    reactions : numpy array containing the reactions in rows. The first and second
-    column will be the reactants and the third and fourth the products. The last
-    row indicates the type of reaction (monomolecular, bimolecular...)
-
-    Returns
-    -------
-    The number of reactions
-
-    '''
-    return np.shape(reactions)[0]
-
-
 def c_matrix(reactions, species, header):
     '''
 
@@ -100,7 +83,7 @@ def c_matrix(reactions, species, header):
     indicate the stoichiometry of the specie in that reaction.
 
     '''
-    m = calculate_m(reactions) # number of reactions
+    m = reactions.shape[0] # number of reactions
     n_species = len(species) # number of species
     c = np.zeros(shape=(m, n_species)) # c matrix: a row for each reaction and a column for each species
     
@@ -119,33 +102,25 @@ def c_matrix(reactions, species, header):
     return c
 
 
-def reactants(file):
+def reactants(reactions, species, header):
     """
     Input
     ----------
-    c: c matrix
-    
-    Returns
-    -------
-    c_reactants: a C matrix with only the reactant species for each
-    reaction
+    reactions: numpy array of reactions
+    species: numpy array of unique species
+    header: list of column headers
+    ...
     """
-    reactions = read_file(file)
-    species = obtain_species(reactions)
-    header = get_header(file)
-    m = calculate_m(reactions) # number of reactions
-    n_species = len(species) # number of species
-    c_reactants = np.zeros(shape=(m, n_species)) # c matrix: a row for each reaction and a column for each species
+    m = reactions.shape[0] 
+    n_species = len(species) 
+    c_reactants = np.zeros(shape=(m, n_species)) 
     
     for i in range(m):
         reaction = reactions[i, :] 
         for j in range(len(header)):
-            # each j will be a species or empty ('')
-            if reaction[j] in species:  # If the element is different from '' it will be in species 
-                                        # this eliminates empty species
-                # Get the index of the element in the list of species (to keep it coherent)
+            if reaction[j] in species:  
                 index = list(species).index(reaction[j])
-                if header[j].startswith("r"):  # If it is a reactant
+                if header[j].startswith("r"):  
                     c_reactants[i, index] += 1
     return c_reactants
 
@@ -192,15 +167,15 @@ def chemistry(method: str, iterations:int, file: str,
     try:
         reactions = read_file(file)
         header = get_header(file)
-    except FileExistsError or FileNotFoundError:
+    except (FileExistsError, FileNotFoundError):
         raise Exception("File not found")
     
     species = obtain_species(reactions)
     c = c_matrix(reactions, species, header)
     k_types = reactions[:, -1] # monomolecular, bimolecular...
-    m = calculate_m(reactions) # number of reactions
+    m = reactions.shape[0] # number of reactions
     abundances = np.zeros((1, np.shape(species)[0])) # initialization of abundances
-    c_reactants = reactants(file)
+    c_reactants = reactants(reactions, species, header)
     
     if len(initial_food) != len(species): # not enough initial abundances
         raise Exception(
@@ -399,9 +374,10 @@ def gillespie(abundances_init, m, k_types, k, c, V, iterations, c_reactants, thr
         tau = (1/a0) * math.log(1/r1)
 
         sum_a = np.cumsum(a)
-        for mu in range(len(a)):
-            if sum_a[mu] >= r2*a0:
-                break
+        # for mu in range(len(a)):
+        #     if sum_a[mu] >= r2*a0:
+        #         break
+        mu = np.searchsorted(sum_a, r2 * a0) # More efficient than a loop for finding the index
 
         abundances[n + 1] = abundance + c[mu]
         times[n + 1] = times[n] + tau
@@ -469,7 +445,7 @@ def gillespie_ctflux(abundances_init, m, k_types, k, c, V_init, iterations, c_re
 
     # --- GILLESPIE ALGORITHM ---
     
-    if threshold == None: # if user does not define a specific threshold
+    if threshold is None: # if user does not define a specific threshold
         threshold = threshold_function(volumes, margin= 0.5)
         
     counter = 0
@@ -499,9 +475,10 @@ def gillespie_ctflux(abundances_init, m, k_types, k, c, V_init, iterations, c_re
         tau = (1/a0) * math.log(1/r1)
 
         sum_a = np.cumsum(a)
-        for mu in range(len(a)):
-            if sum_a[mu] >= r2*a0:
-                break
+        # for mu in range(len(a)):
+        #     if sum_a[mu] >= r2*a0:
+        #         break
+        mu = np.searchsorted(sum_a, r2 * a0) # More efficient than a loop for finding the index
 
         abundances[n + 1] = abundance + c[mu]
         times[n + 1] = times[n] + tau
@@ -544,7 +521,7 @@ def calculate_dxdt(dxdt, i, k_types, abundance, c_reactants, h, k, V):
 
 def integrate_ODEs(reactions, k, V, initial_abundance, iterations, c, c_reactants):
     k_types = reactions[:, -1]
-    m = calculate_m(reactions)
+    m = reactions.shape[0] # number of reactions
     t_end = iterations
     
     if m != len(k): # not enough catalytic constants
@@ -654,8 +631,6 @@ def gillespieProtocell(
     c_reactants,
     threshold
 ) -> tuple:
-    times = np.array([0.0], dtype=float)
-    
     num_species = abundances_init.shape[1]
     abundances = np.zeros((int(iterations) + 1, num_species))
     abundances[0] = abundances_init[0]
@@ -664,7 +639,7 @@ def gillespieProtocell(
     volumes = np.zeros(int(iterations) + 1)
     volumes[0] = float(V_init)
      
-    if threshold == None: # if user does not define a specific threshold
+    if threshold is None: # if user does not define a specific threshold
         threshold = threshold_function(V_init, margin= 0.5)
     
     non_volume_species_indices = get_non_volume_species_indices(k_types, c)
@@ -725,9 +700,10 @@ def gillespieProtocell(
         tau = (1/a0) * math.log(1/r1)
 
         sum_a = np.cumsum(a)
-        for mu in range(len(a)):
-            if sum_a[mu] >= r2*a0:
-                break
+        # for mu in range(len(a)):
+        #     if sum_a[mu] >= r2*a0:
+        #         break
+        mu = np.searchsorted(sum_a, r2 * a0) # More efficient than a loop for finding the index
                 
         abundances[n + 1, :] = abundance + c[mu]
 
@@ -759,54 +735,52 @@ def gillespieProtocell(
 
 
 def gillespieProtocell_withdivision(
-    abundances, 
+    abundances_init, 
     m, 
     k_types, 
     k, 
     c, 
-    V, 
+    V_init, 
     iterations, 
     c_reactants,
     threshold
 ) -> tuple:
     
-    times = np.array([0.0], dtype=float)
-    V = np.array([float(V)], dtype=float)
+    num_species = abundances_init.shape[1]
     
-    if threshold == None: # if user does not define a specific threshold
-        threshold = threshold_function(V, margin= 0.5)
+    abundances = np.zeros((int(iterations) + 1, num_species))
+    abundances[0] = abundances_init[0]
+    
+    times = np.zeros(int(iterations) + 1)
+    volumes = np.zeros(int(iterations) + 1)
+    volumes[0] = float(V_init)
+     
+    if threshold is None: 
+        threshold = threshold_function(V_init, margin=0.5)
     
     non_volume_species_indices = get_non_volume_species_indices(k_types, c)
-    # Calculate initial abundance_v_relation based on the contributing species
     all_species_indices = np.arange(np.shape(c)[1])
-    # The species that contribute are the ones that are not on non_volume_species
-    # np.setdiff1d returns the different values in two arrays --> 
-    # in this case the values will be the indices from species that affect the protocell volume
     volume_species_indices = np.setdiff1d(all_species_indices, non_volume_species_indices)
     
     if len(volume_species_indices) == 0:
         raise Exception("No species are products of a non type '4' reaction, so volume cannot be calculated.")
     
     initial_total_abundance = np.sum(abundances[0, volume_species_indices])
-    abundance_v_relation = initial_total_abundance / V[0]
+    abundance_v_relation = initial_total_abundance / volumes[0]
     
-    # Calculate initial concentration for food, as this will be constant throughout the simulation
     if non_volume_species_indices.size > 0:
-        initial_non_volume_conc = abundances[0, non_volume_species_indices] / V[0]      
+        initial_non_volume_conc = abundances[0, non_volume_species_indices] / volumes[0]      
     
-    # now we filter the reactions -> keeping only those that are not type 4
     no_type_4_reaction_indices = np.where(k_types != '4')[0]
-    reactions_to_keep = np.zeros(m, dtype= bool)
-    reactions_to_keep[no_type_4_reaction_indices]= True
+    reactions_to_keep = np.zeros(m, dtype=bool)
+    reactions_to_keep[no_type_4_reaction_indices] = True
     
-    # variables to update:
     k_types = k_types[reactions_to_keep]
     c = c[reactions_to_keep]
-    m = np.shape(c)[0] # number of reactions must be updated
+    m = np.shape(c)[0] 
         
-    # inizialization of gillespie algorithm
-    h = np.zeros(m) # h = propensities (no tiene en cuenta la constante catalitica)
-    a = np.zeros(m) # a = probabilites (propensities * constante catalítica)
+    h = np.zeros(m) 
+    a = np.zeros(m) 
 
     if len(no_type_4_reaction_indices) != len(k):
         raise Exception(
@@ -814,76 +788,74 @@ def gillespieProtocell_withdivision(
     
     n = 0
     counter = 0
-    mu = 0
     division = False
+    
     while n < iterations:
         abundance = abundances[n]
         
-        # if the initial volume has been duplicated, the protocell will divide
-        if V[-1] > V[0] * 2:
+        # Check volume at the current step
+        if volumes[n] > volumes[0] * 2:
             division = True
 
         for i in range(m):
-            a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, V[-1])
+            a = calculate_a(a, i, k_types, abundance, c_reactants, h, k, volumes[n])
 
-        # Get the a_0
         a0 = np.sum(a)
         if a0 == 0:
             print("La probabilidad total es 0 !!")
-            return abundances, times, V
+            # Return sliced arrays up to current step
+            return abundances[:n+1], times[:n+1], volumes[:n+1]
 
-        # Get two random numbers, r1 and r2        
         r1 = random()
         r2 = random()
 
-        # Get mu and tau
         tau = (1/a0) * math.log(1/r1)
 
         sum_a = np.cumsum(a)
-        for mu in range(len(a)):
-            if sum_a[mu] >= r2*a0:
-                break
+        # for mu in range(len(a)):
+        #     if sum_a[mu] >= r2*a0:
+        #         break
+        mu = np.searchsorted(sum_a, r2 * a0) # More efficient than a loop for finding the index
         
-        new_abundances = abundances[n] + c[mu]
-        times = np.append(times, times[-1] + tau)
+        # Calculate new values
+        new_abundances = abundance + c[mu]
         
-        if any(n < 0 for n in new_abundances):
-            print(f"Warning: Negative molecules detected at time {times[-1]}!")
-            # Force to zero as a safety measure
-            new_abundances = [max(0, n) for n in new_abundances]
-            new_abundances = np.array(new_abundances)
+        # Assign directly by index 
+        times[n+1] = times[n] + tau
         
-        # actualizar el volumen en función de la reacción que haya tocado
+              
         new_V = update_v_protocell(new_abundances, abundance_v_relation, volume_species_indices)
         
-        # if the initial volume has been duplicated, the protocell will divide
-        if division == True:
+        if division:
             new_V = new_V / 2
             new_abundances = np.round(new_abundances / 2)
             division = False
         
-        V = np.append(V, new_V)
-        if non_volume_species_indices.any != None:
-            # now there's more/less food that can be inside that volume
+        # Assign directly by index
+        volumes[n+1] = new_V
+        
+        if non_volume_species_indices.size > 0:
             new_abundances[non_volume_species_indices] = np.round(initial_non_volume_conc * new_V)
             
-        abundances = np.vstack((abundances, new_abundances))
+        # Assign directly by index
+        abundances[n+1] = new_abundances
         
-        # stop criterion
-        if n%500 == 0 and n > 2000:
-            last_500_concentrations = (abundances[-500:,volume_species_indices].T/V[-500:]).T
+        # Stop criterion
+        if n % 500 == 0 and n > 2000:
+            # We slice up to n+2 because n+1 is the current state we just added
+            last_500_concentrations = (abundances[n-499:n+2, volume_species_indices].T / volumes[n-499:n+2]).T
             std = block_statistics(last_500_concentrations)
             
             if max(std) < threshold:
                 counter += 1
                 if counter == 100:
-                    return abundances, times, V
+                    return abundances[:n+2], times[:n+2], volumes[:n+2]
             else: 
                 counter = 0
         
         n += 1
 
     print("Criterion for stop was # of iterations")
-    return abundances, times, V
+    return abundances, times, volumes
 
 
