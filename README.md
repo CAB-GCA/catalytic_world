@@ -1,5 +1,4 @@
-# Catalytic world
-# Catalytic World: Computational Modeling of Protocell Growth
+# Catalytic World
 
 This repository contains the computational framework developed to simulate the chemical evolution and physical growth of volume-variable protocells. 
 
