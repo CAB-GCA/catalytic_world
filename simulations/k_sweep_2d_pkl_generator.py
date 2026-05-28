@@ -82,7 +82,7 @@ def main():
     # Base parameters
     base_k = [1.0] * 8
     V_init = 1000.0
-    iterations = int(1e5)
+    iterations = int(2e5)
     threshold = None
     
     # Standard initial conditions for autocat
@@ -92,7 +92,7 @@ def main():
     
     # --- DEFINE THE 2D SWEEP ---
     k_change = np.logspace(-5, 7, 25)
-    replicates_per_condition = 5
+    replicates_per_condition = 1
     
     # Target indices in the 'k' array 
     # for k2 and k4 keep the following lines
