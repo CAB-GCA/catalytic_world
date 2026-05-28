@@ -82,8 +82,8 @@ def main():
     # Base parameters
     base_k = [1.0] * 8
     V_init = 1000.0
-    iterations = int(2e5)
-    threshold = 0
+    iterations = int(1e5)
+    threshold = None
     
     # Standard initial conditions for autocat
     abundances_init = np.zeros((1, len(species)))
@@ -134,7 +134,7 @@ def main():
     if total_new_tasks > 0:
         # --- EXECUTE IN PARALLEL (Optimized for OS responsiveness) ---
         # Leave at least 2 cores free for your operating system so it doesn't freeze.
-        num_cores = max(1, mp.cpu_count() - 10) 
+        num_cores = max(1, mp.cpu_count() - 2) 
         print(f"Firing up {num_cores} CPU cores ")
         start_time = time.time()
         
