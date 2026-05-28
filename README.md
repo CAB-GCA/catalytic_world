@@ -28,9 +28,4 @@ catalytic_world/
 │
 ├── examples/                    # Reaction network definition files (.txt)
 │
-├── figures_TFM/                 # Generated output directory for thesis figures
-├── figures_internship/          # Generated output directory for preliminary report figures
-├── data_archive/                # Output directory for saved .pkl simulation results (Git ignored)
-│
-├── requirements.txt             # Python dependencies
 └── README.md                    # Project documentation
