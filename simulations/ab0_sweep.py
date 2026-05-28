@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # Load data for the triple sweep
     print("Loading data...")
     results_k1_low = load_streamed_pickle("../data_archive/barrido_ab0_k1_0.0001_parallel.pkl")
-    results_k1_med = load_streamed_pickle("../data_archive/barrido_ab0_k1_1_local.pkl")
+    results_k1_med = load_streamed_pickle("../data_archive/barrido_ab0_k1_1_parallel.pkl")
     results_k1_high = load_streamed_pickle("../data_archive/barrido_ab0_k1_10000.0_parallel.pkl")
     
     # Optional: If you want to print the DataFrames to check the exact numbers before plotting

@@ -15,19 +15,20 @@ def set_publication_style():
     Call this once at the beginning of your main execution scripts.
     """
     plt.rcParams.update({
-        'font.size': 12,
+        'font.size': 14,
         'axes.labelsize': 14,
         'axes.titlesize': 16,
-        'xtick.labelsize': 12,
-        'ytick.labelsize': 12,
-        'legend.fontsize': 12,
+        'xtick.labelsize': 14,
+        'ytick.labelsize': 14,
+        'legend.fontsize': 14,
         'lines.linewidth': 2.0,
         'figure.figsize': (8, 6),
         'figure.dpi': 300,
         'font.family': 'calibri',
         'axes.grid': False,
         'grid.alpha': 0.3,
-        'image.cmap': 'viridis' # A colorblind-friendly default for 2D sweeps
+        'image.cmap': 'viridis', 
+        'mathtext.default':'regular'
     })
 
 
@@ -87,13 +88,6 @@ def plot_internship_conc_and_vol(times, abundances, volumes, species, fig_name=N
 def plot_time_evolution(times, abundances, volumes, species_indices, custom_labels, title="Time Evolution", color_map=None):
     """
     Plots the concentration of specific species over time.
-    
-    Parameters:
-    - times: 1D array of time steps.
-    - abundances: 2D array of species counts over time.
-    - volumes: 1D array of system volumes over time.
-    - species_indices: List of column indices to plot.
-    - custom_labels: List of exact strings for the legend to prevent automated mislabeling.
     """
     fig, ax = plt.subplots()
     
@@ -119,11 +113,6 @@ def plot_time_evolution(times, abundances, volumes, species_indices, custom_labe
 def plot_sweep_with_replicates(param_values, raw_replicate_data, param_name, custom_label, log_x=True):
     """
     Plots the steady-state volume or concentration across a parameter sweep.
-    Takes RAW replicate data (list of lists/arrays) to calculate and plot exact error bars.
-    
-    Parameters:
-    - param_values: 1D array of the parameter varied (e.g., k1 or ab0).
-    - raw_replicate_data: 2D array where rows are parameter values and columns are replicate results.
     """
     fig, ax = plt.subplots()
     
@@ -137,6 +126,7 @@ def plot_sweep_with_replicates(param_values, raw_replicate_data, param_name, cus
     
     if log_x:
         ax.set_xscale('log')
+        ax.xaxis.set_minor_locator(ticker.NullLocator()) # REMOVE MINOR TICKS
         
     ax.set_xlabel(param_name)
     ax.set_ylabel("Steady State Value")
@@ -160,6 +150,9 @@ def plot_2d_sweep_heatmap(param_x, param_y, z_matrix, xlabel, ylabel, zlabel="St
     
     ax.set_xscale('log')
     ax.set_yscale('log')
+    ax.xaxis.set_minor_locator(ticker.NullLocator()) # REMOVE MINOR TICKS
+    ax.yaxis.set_minor_locator(ticker.NullLocator()) # REMOVE MINOR TICKS
+
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     
@@ -174,7 +167,6 @@ def save_figure(fig, filename):
     plt.close(fig)
     
     
-
 def _get_alpha_single_run(cond:float, result:tuple, values_used=None):
     """Helper function to calculate Alpha and R^2 for a single run."""
     _, times, volumes = result
@@ -207,14 +199,11 @@ def plot_combined_AB(results_list, xlim=None, ylim=None, lim=None, rep=0, fig_na
     results_list: List of 3 result dictionaries.
     Plots a 2x3 grid: Top row is Alpha/R^2 Sweep, Bottom row is Volume Evolution.
     """
-    # Specific styling from your original notebook
     title_fs = 16
     label_fs = 15
     tick_fs = 14
     legend_fs = 14
-    
-    # Use constrained_layout=True to automatically prevent overlaps
-    fig, axes = plt.subplots(2, 3, figsize=(15, 7), constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(12, 6), constrained_layout=True)
     
     titles_sweep = [r"(A)" +"\t"+r"$k_2 = 10^{-4}$", r"(B)"+"\t"+r"$k_2 = 1$", r"(C)"+"\t"+r"$k_2 = 10^4$"]
     titles_vol = [r"(D)"+"\t"+r"$k_2 = 10^{-4}$", r"(E)"+"\t"+r"$k_2 = 1$", r"(F)"+"\t"+r"$k_2 = 10^4$"]
@@ -257,14 +246,16 @@ def plot_combined_AB(results_list, xlim=None, ylim=None, lim=None, rep=0, fig_na
         ax_sweep.tick_params(axis='y', labelcolor="teal", labelsize=tick_fs)
         ax_sweep.set_title(titles_sweep[i], fontsize=title_fs, loc='left')
         ax_sweep.axhline(y=0, color="teal", alpha=0.5, linestyle=":")
+        
+        
         ax_sweep.tick_params(axis='x', labelsize=tick_fs)
-        ax_sweep.xaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
+        # ax_sweep.xaxis.set_major_locator(ticker.MaxNLocator(nbins=5)) # MaxNLocator can conflict with log scales occasionally
         ax_sweep.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
 
         # Secondary Axis: R^2
         ax2_sweep = ax_sweep.twinx() 
         ax2_sweep.set_ylabel(r'$R^2$', color="orangered", fontsize=label_fs)
-        ax2_sweep.scatter(df['Condition'], df['R2_mean'], color="orangered", marker='s', alpha=0.6)
+        ax2_sweep.scatter(df['Condition'], df['R2_mean'], rotation=270,labelpad=20,color="orangered", marker='s', alpha=0.6)
         ax2_sweep.tick_params(axis='y', labelcolor="orangered", labelsize=tick_fs)
         ax2_sweep.set_ylim((0, 1.05))
         ax2_sweep.xaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
@@ -304,15 +295,16 @@ def plot_combined_AB(results_list, xlim=None, ylim=None, lim=None, rep=0, fig_na
 
         ax_vol.set_title(titles_vol[i], fontsize=title_fs, loc='left')
         ax_vol.set_yscale('log')
+        ax_vol.yaxis.set_minor_locator(ticker.NullLocator()) # REMOVE MINOR TICKS
+        
         ax_vol.set_xlabel("Time", fontsize=label_fs)
         ax_vol.set_ylabel("Volume", fontsize=label_fs)
         ax_vol.xaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
         ax_vol.tick_params(axis='both', labelsize=tick_fs)
         
-        # Legend placed explicitly outside the axes area for the last plot
         if i == 2:
             ax_vol.legend(title=rf"$[\text{{AB}}]_0$", fontsize=legend_fs-1, title_fontsize=title_fs-1,
-                          loc='upper left', bbox_to_anchor=(1.15, 1))
+                          loc='upper left', bbox_to_anchor=(1.05, 1.15))
             
         if xlim: ax_vol.set_xlim(0, xlim[i])
         if ylim: ax_vol.set_ylim(ylim)
@@ -367,10 +359,6 @@ def get_alpha_single_run(cond:float, result:tuple, values_used=None):
     return {'Alpha': m_fit, 'R^2': R_squared}
 
 def extract_stats_from_replicates(results_dict, values_used=1):
-    """
-    Standardizes the messy nested dictionaries from parallel runs 
-    and returns a clean pandas DataFrame.
-    """
     res_copy = results_dict.copy()
     if 0.0 in res_copy: 
         res_copy.pop(0.0)
@@ -414,7 +402,6 @@ def plot_concentration_evolution(times, abundances, volumes, species, fig_name=N
         ax.set_xlim((0, xlim))
         
     if fig_name is not None:
-        import os
         os.makedirs("../figures_TFM", exist_ok=True)
         plt.savefig(f"../figures_TFM/{fig_name}.png", dpi=300)
     plt.show()
@@ -445,7 +432,6 @@ def plot_comparison_concentration(deterministic, stochastic, species, fig_name=N
     if xlim is not None:
         ax.set_xlim((0, xlim))
     if fig_name is not None:
-        import os
         os.makedirs("../figures_TFM", exist_ok=True)
         plt.savefig(f"../figures_TFM/{fig_name}.png", dpi=300)
     plt.show()
@@ -472,6 +458,11 @@ def plot_comparison_conc_and_vol(deterministic, stochastic, species, fig_name=No
     ax2.plot(t_det, v_det, color='black', alpha=0.9, linestyle='--', label='Volume (Deterministic)')
     ax2.set_xlabel("Time")
     ax2.set_ylabel("Volume")
+    
+    # REMOVE MINOR TICKS
+    ax2.set_yscale('log')
+    ax2.yaxis.set_minor_locator(ticker.NullLocator()) 
+
     ax2.set_title("(B)", loc="left", fontsize=16)
 
     # Custom Legend for Ax1
@@ -486,7 +477,6 @@ def plot_comparison_conc_and_vol(deterministic, stochastic, species, fig_name=No
         ax2.set_xlim((0, xlim))
         
     if fig_name is not None:
-        import os
         os.makedirs("../figures_TFM", exist_ok=True)
         plt.savefig(f"../figures_TFM/{fig_name}.png", dpi=300)
     plt.show()
@@ -553,6 +543,8 @@ def plot_r2_map(r2_grid, k_values, k_in, k_out, min_log=-5, max_log=7, figname=N
     filtered_grid = r2_grid[mask][:, mask]
     filtered_k = log_k[mask]
     
+    # --- THE FIX ---
+    # We only check if the R2 grid is empty here!
     if filtered_grid.size == 0:
         print("No data in range.")
         return
@@ -582,9 +574,13 @@ def plot_r2_map(r2_grid, k_values, k_in, k_out, min_log=-5, max_log=7, figname=N
     plt.show()
 
 
+    
 def plot_both_2d_sweeps(alpha_grid, r2_grid, k_values, k_in, k_out, min_log=-np.inf, max_log=np.inf, figname=None):
     """Plots both the Alpha (A) and R^2 (B) heatmaps side-by-side."""
+    import matplotlib.ticker as ticker  # <--- THE FIX: Explicitly load ticker here
+
     tick_fs = 14
+    title_fs = 16
     if r2_grid.size == 0 or alpha_grid.size == 0:
         print("No data to plot.")
         return
@@ -597,9 +593,14 @@ def plot_both_2d_sweeps(alpha_grid, r2_grid, k_values, k_in, k_out, min_log=-np.
         filtered_k = log_k 
         
     extent = [filtered_k[0], filtered_k[-1], filtered_k[0], filtered_k[-1]]
-    fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.75))
-    ax1, ax2 = axes
     fmt = ticker.FuncFormatter(lambda x, pos: f"$10^{{{int(x)}}}$")
+
+    # --- 3-Column Layout ---
+    fig, axes = plt.subplots(1, 3, figsize=(8,2.914), 
+                             gridspec_kw={'width_ratios': [1, 1, 0.35]}, 
+                             constrained_layout=True)
+    ax1, ax2, ax3 = axes
+    ax3.axis('off') # Hide the empty column
 
     # --- LEFT COLUMN: Alpha Grid ---
     floor_val = -6.0
@@ -623,14 +624,14 @@ def plot_both_2d_sweeps(alpha_grid, r2_grid, k_values, k_in, k_out, min_log=-np.
     labels = ["$0$" if t == floor_val else f"$10^{{{int(t)}}}$" for t in all_ticks]
     cbar1.set_ticklabels(labels)
     cbar1.ax.tick_params(labelsize=tick_fs)
-    cbar1.set_label(r'Growth Rate ($\alpha$)', rotation=270, labelpad=20)
+    cbar1.set_label(r'Growth rate $\alpha$', rotation=270, labelpad=20)
     
     ax1.xaxis.set_major_formatter(fmt)
     ax1.yaxis.set_major_formatter(fmt)
     ax1.set_xlabel(fr'$k_{{{k_in}}}$')
     ax1.set_ylabel(fr'$k_{{{k_out}}}$')
     ax1.tick_params(axis='both', labelsize=tick_fs)
-    ax1.set_title("(A)", loc="left", x=-0.05, y=1, pad=10, fontsize=16)
+    ax1.set_title("(A)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
     ax1.grid(False)
 
     # --- RIGHT COLUMN: R^2 Grid ---
@@ -646,15 +647,14 @@ def plot_both_2d_sweeps(alpha_grid, r2_grid, k_values, k_in, k_out, min_log=-np.
     ax2.set_xlabel(fr'$k_{{{k_in}}}$')
     ax2.set_ylabel(fr'$k_{{{k_out}}}$')
     ax2.tick_params(axis='both', labelsize=tick_fs)
-    ax2.set_title("(B)", loc="left", x=-0.05, y=1, pad=10, fontsize=16)
+    ax2.set_title("(B)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
 
-    plt.tight_layout()
     if figname:
+        import os
         os.makedirs("../figures_TFM", exist_ok=True)
         plt.savefig(f"../figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
     plt.show()
     
-
 def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=None, lim=None, rep=0, figname=None):
     """
     Plots a 1x2 grid for a 1D kinetic parameter sweep.
@@ -668,12 +668,15 @@ def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=N
     tick_fs = 14
     legend_fs = 14
 
-    # Setup Figure: 1 row, 2 columns with constrained_layout to prevent legend cutoff
-    fig, axes = plt.subplots(1, 2, figsize=(10, 3.5), 
-                             gridspec_kw={'width_ratios': [1, 1.3]}, 
+    # --- THE FIX: 3-Column Layout ---
+    # Width ratios of 1:1 force the first two plots to be perfectly equal.
+    fig, axes = plt.subplots(1, 3, figsize=(8,2.914), 
+                             gridspec_kw={'width_ratios': [1, 1, 0.35]}, 
                              constrained_layout=True)    
     ax_sweep = axes[0]
     ax_vol = axes[1]
+    ax_leg = axes[2]
+    ax_leg.axis('off') # Hide the third axis completely
     
     # ==========================================
     # LEFT COLUMN: Alpha & R^2 Sweep
@@ -688,7 +691,6 @@ def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=N
         
         for r in reps_list:
             data_tuple = list(r.values())[0] if isinstance(r, dict) else r
-            # Reuse our internal helper function! (defaults to values_used=None)
             res = _get_alpha_single_run(condition, data_tuple) 
             alphas.append(res['Alpha'])
             r2_values.append(res['R^2'])
@@ -711,9 +713,12 @@ def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=N
     ax_sweep.tick_params(axis='y', labelcolor="teal", labelsize=tick_fs)
     ax_sweep.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
     ax_sweep.axhline(y=0, color="teal", alpha=0.6, linestyle=":")
+    
     ax_sweep.set_xscale('log')
+    ax_sweep.xaxis.set_minor_locator(ticker.NullLocator())
+    
     ax_sweep.tick_params(axis='x', labelsize=tick_fs)
-    ax_sweep.set_title("(C)", loc="left", x=-0.05, y=1, pad=10, fontsize=16)
+    ax_sweep.set_title("(C)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
     ax_sweep.grid(False)
 
     # Secondary Axis: R^2
@@ -723,6 +728,7 @@ def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=N
     ax2_sweep.tick_params(axis='y', labelcolor="orangered", labelsize=tick_fs)
     ax2_sweep.set_ylim((0, 1.05))
     ax2_sweep.grid(False)
+    
     # ==========================================
     # RIGHT COLUMN: Volumes vs Time
     # ==========================================
@@ -750,26 +756,31 @@ def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=N
         ax_vol.plot(t, v, color=color_gradient[j], label=formatted_label, alpha=0.9, linewidth=2)    
 
     ax_vol.set_yscale('log')
+    ax_vol.yaxis.set_minor_locator(ticker.NullLocator())
+    
     ax_vol.set_xlabel("Time", fontsize=label_fs)
     ax_vol.set_ylabel("Volume", fontsize=label_fs)
     ax_vol.xaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
     ax_vol.tick_params(axis='both', labelsize=tick_fs)
-    ax_vol.set_title("(D)", loc="left", x=-0.05, y=1, pad=10, fontsize=16)
+    ax_vol.set_title("(D)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
 
     if xlim is not None:
         ax_vol.set_xlim((0, xlim))
     if ylim is not None:
         ax_vol.set_ylim((5e1, ylim))
 
-    # Legend Processing
+    # ==========================================
+    # LEGEND INJECTION
+    # ==========================================
     handles, labels = ax_vol.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     
     sorted_labels = sorted(by_label.keys(), key=lambda x: float(x.replace('$', '').replace('{', '').replace('}', '')))
     sorted_handles = [by_label[k] for k in sorted_labels]
     
-    ax_vol.legend(sorted_handles, sorted_labels, title=rf"$k_{{{k_i+1}}}$", fontsize=legend_fs-2,
-                  loc='center left', bbox_to_anchor=(1.05, 0.5), title_fontsize=title_fs)
+    # Attach the legend to the invisible 3rd axis
+    ax_leg.legend(sorted_handles, sorted_labels, title=rf"$k_{{{k_i+1}}}$", fontsize=legend_fs-2,
+                  loc='center left', title_fontsize=title_fs)
 
     if figname:
         import os
@@ -778,27 +789,204 @@ def plot_combined_k_sweep_and_volumes(results: dict, k_i: int, xlim=None, ylim=N
         
     plt.show()
     
+    
+def plot_master_4panel_figure(alpha_grid, r2_grid, k_values_2d, k_in, k_out, 
+                              results_1d, k_i, xlim_1d=None, ylim_1d=None, lim_1d=None, 
+                              min_log=-np.inf, max_log=np.inf, figname=None):
+    """
+    Creates a 2x2 master figure. 
+    Top row: 2D Heatmaps (Alpha and R^2). 
+    Bottom row: 1D parameter sweeps (Alpha/R^2 and Volume Evolution).
+    """
+    import pandas as pd
+    import matplotlib.ticker as ticker
+    from matplotlib.lines import Line2D
+    import matplotlib.pyplot as plt
 
+    # Global Font Sizes
+    title_fs = 16
+    label_fs = 15
+    tick_fs = 14
+    legend_fs = 14
+
+    # --- SETUP THE 2x3 GRID ---
+    fig, axes = plt.subplots(2, 3, figsize=(10,6.25), 
+                             gridspec_kw={'width_ratios': [1, 1, 0.35], 'height_ratios': [1, 1]}, 
+                             constrained_layout=True)
+    
+    ax_alpha_2d, ax_r2_2d, ax_empty_top = axes[0]
+    ax_alpha_1d, ax_vol_1d, ax_leg_bot = axes[1]
+    
+    ax_empty_top.axis('off') # Spacer for top row
+    ax_leg_bot.axis('off')   # Holder for bottom row legend
+
+    fmt = ticker.FuncFormatter(lambda x, pos: f"$10^{{{int(x)}}}$")
+
+    # ==========================================
+    # TOP ROW: 2D HEATMAPS
+    # ==========================================
+    if r2_grid.size > 0 and alpha_grid.size > 0:
+        log_k = np.log10(k_values_2d)
+        mask = (log_k >= min_log) & (log_k <= max_log)
+        filtered_k = log_k[mask] if len(log_k[mask]) > 0 else log_k
+        extent = [filtered_k[0], filtered_k[-1], filtered_k[0], filtered_k[-1]]
+
+        # --- (A) 2D Alpha Grid ---
+        floor_val = -6.0
+        log_alpha_grid = np.full_like(alpha_grid, floor_val)
+        np.log10(alpha_grid, where=(alpha_grid > 0), out=log_alpha_grid)
+        
+        cmap_plasma = plt.colormaps.get_cmap('plasma').copy()
+        cmap_plasma.set_under('black') 
+        cmap_plasma.set_bad('black') 
+        
+        vmin = floor_val + 0.1 
+        vmax = np.max(log_alpha_grid) if np.max(log_alpha_grid) > vmin else vmin + 1
+        
+        im1 = ax_alpha_2d.imshow(log_alpha_grid, origin='lower', extent=extent,
+                                 aspect='auto', cmap=cmap_plasma, vmin=vmin, vmax=vmax)
+
+        # THE FIX: Create a tightly bound box for the colorbar (x0, y0, width, height)
+        cax1 = ax_alpha_2d.inset_axes([1.05, 0, 0.05, 1])
+        cbar1 = fig.colorbar(im1, cax=cax1, extend='min', format=fmt)
+        
+        desired_ticks = np.arange(np.ceil(vmin), np.floor(vmax) + 1, 2)
+        all_ticks = np.sort(np.append(desired_ticks, floor_val))
+        cbar1.set_ticks(all_ticks)
+        cbar1.set_ticklabels(["$0$" if t == floor_val else f"$10^{{{int(t)}}}$" for t in all_ticks])
+        cbar1.ax.tick_params(labelsize=tick_fs)
+        cbar1.set_label(r'Growth rate $\alpha$', rotation=270, labelpad=20)
+        
+        ax_alpha_2d.xaxis.set_major_formatter(fmt)
+        ax_alpha_2d.yaxis.set_major_formatter(fmt)
+        ax_alpha_2d.set_xlabel(fr'$k_{{{k_in}}}$', fontsize=label_fs)
+        ax_alpha_2d.set_ylabel(fr'$k_{{{k_out}}}$', fontsize=label_fs)
+        ax_alpha_2d.tick_params(axis='both', labelsize=tick_fs)
+        ax_alpha_2d.set_title("(A)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
+
+        # --- (B) 2D R^2 Grid ---
+        im2 = ax_r2_2d.imshow(r2_grid, origin='lower', extent=extent, 
+                              aspect='auto', cmap='viridis', vmin=0, vmax=1)
+        
+        # THE FIX: Create a tightly bound box for the colorbar
+        cax2 = ax_r2_2d.inset_axes([1.05, 0, 0.05, 1])
+        cbar2 = fig.colorbar(im2, cax=cax2)
+        
+        cbar2.ax.tick_params(labelsize=tick_fs)
+        cbar2.set_label(r'$R^2$', rotation=270, labelpad=20)
+        
+        ax_r2_2d.xaxis.set_major_formatter(fmt)
+        ax_r2_2d.yaxis.set_major_formatter(fmt)
+        ax_r2_2d.set_xlabel(fr'$k_{{{k_in}}}$', fontsize=label_fs)
+        ax_r2_2d.set_ylabel(fr'$k_{{{k_out}}}$', fontsize=label_fs)
+        ax_r2_2d.tick_params(axis='both', labelsize=tick_fs)
+        ax_r2_2d.set_title("(B)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
+
+    # ==========================================
+    # BOTTOM ROW: 1D SWEEPS
+    # ==========================================
+    if results_1d:
+        stats_results = []
+        for condition, replicates in results_1d.items():
+            alphas, r2_values = [], []
+            reps_list = replicates if isinstance(replicates, (list, tuple)) else [replicates]
+            
+            for r in reps_list:
+                data_tuple = list(r.values())[0] if isinstance(r, dict) else r
+                res = _get_alpha_single_run(condition, data_tuple) 
+                alphas.append(res['Alpha'])
+                r2_values.append(res['R^2'])
+            
+            stats_results.append({
+                'Condition': float(condition),
+                'Alpha_mean': np.mean(alphas),
+                'Alpha_std': np.std(alphas),
+                'R2_mean': np.mean(r2_values)
+            })
+
+        df = pd.DataFrame(stats_results).sort_values('Condition')
+
+        # --- (C) 1D Alpha & R^2 Sweep ---
+        ax_alpha_1d.set_xlabel(fr'$k_{{{k_i+1}}}$', fontsize=label_fs)
+        ax_alpha_1d.set_ylabel(r'Growth rate $\alpha$', color="teal", fontsize=label_fs)
+        ax_alpha_1d.errorbar(df['Condition'], df['Alpha_mean'], yerr=df['Alpha_std'], 
+                             color="teal", capsize=4, label=r'Mean $\alpha$')
+        
+        ax_alpha_1d.tick_params(axis='y', labelcolor="teal", labelsize=tick_fs)
+        ax_alpha_1d.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
+        ax_alpha_1d.axhline(y=0, color="teal", alpha=0.6, linestyle=":")
+        
+        ax_alpha_1d.set_xscale('log')
+        ax_alpha_1d.xaxis.set_minor_locator(ticker.NullLocator())
+        ax_alpha_1d.tick_params(axis='x', labelsize=tick_fs)
+        ax_alpha_1d.set_title("(C)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
+
+        ax2_sweep = ax_alpha_1d.twinx()  
+        ax2_sweep.set_ylabel(r'$R^2$', color="orangered",rotation=270,labelpad=20, fontsize=label_fs)  
+        ax2_sweep.scatter(df['Condition'], df['R2_mean'], color="orangered", marker='s', alpha=0.6)
+        ax2_sweep.tick_params(axis='y', labelcolor="orangered", labelsize=tick_fs)
+        ax2_sweep.set_ylim((0, 1.05))
+        
+        # --- (D) 1D Volume Evolution ---
+        if lim_1d is not None:
+            filtered_conds = [c for c in results_1d.keys() if lim_1d[0] < float(c) < lim_1d[1]] 
+        else:
+            filtered_conds = list(results_1d.keys())
+            
+        filtered_conds = sorted(filtered_conds, key=float)
+        color_grad = plt.cm.rainbow(np.linspace(0, 1, len(filtered_conds)))
+
+        for j, condition in enumerate(filtered_conds):
+            replicates = results_1d[condition]
+            formatted_label = f"${float(condition):.1e}$"
+            data_tuple = replicates[0] if isinstance(replicates, (list, tuple)) else replicates
+            if isinstance(data_tuple, dict): data_tuple = list(data_tuple.values())[0]
+            _, t, v = data_tuple
+                
+            ax_vol_1d.plot(t, v, color=color_grad[j], label=formatted_label, alpha=0.9, linewidth=2)    
+
+        ax_vol_1d.set_yscale('log')
+        ax_vol_1d.yaxis.set_minor_locator(ticker.NullLocator())
+        ax_vol_1d.set_xlabel("Time", fontsize=label_fs)
+        ax_vol_1d.set_ylabel("Volume", fontsize=label_fs)
+        ax_vol_1d.xaxis.set_major_locator(ticker.MaxNLocator(nbins=5))
+        ax_vol_1d.tick_params(axis='both', labelsize=tick_fs)
+        ax_vol_1d.set_title("(D)", loc="left", x=-0.05, y=1, pad=10, fontsize=title_fs)
+
+        if xlim_1d is not None: ax_vol_1d.set_xlim((0, xlim_1d))
+        if ylim_1d is not None: ax_vol_1d.set_ylim((5e1, ylim_1d))
+
+        # --- Inject Legend into ax_leg_bot ---
+        handles, labels = ax_vol_1d.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        sorted_labels = sorted(by_label.keys(), key=lambda x: float(x.replace('$', '').replace('{', '').replace('}', '')))
+        sorted_handles = [by_label[k] for k in sorted_labels]
+        
+        ax_leg_bot.legend(sorted_handles, sorted_labels, title=rf"$k_{{{k_i+1}}}$", 
+                          fontsize=legend_fs-2, loc='center left', title_fontsize=title_fs)
+
+    if figname:
+        import os
+        os.makedirs("../figures_TFM", exist_ok=True)
+        plt.savefig(f"../figures_TFM/{figname}.png", bbox_inches='tight', dpi=300)
+        
+    plt.show()
 
 def plot_deterministic_dual_comparison(t_to, conc_to, v_to, species_to, 
                                        t_int_eq, conc_int_eq, v_int_eq, 
                                        t_int_br, conc_int_br, v_int_br, species_int, figname=None):
     """Plots a 2x2 grid. Left: Equivalent parameters. Right: Broken assumptions."""
-    title_fs = 16
-    label_fs = 15
-    tick_fs = 14
-    legend_fs = 14
     
     cmap_colors = list(plt.get_cmap('Set2').colors)
     linestyles = ["-", "--"]
 
-    fig, axes = plt.subplots(figsize=(10,4.5), nrows=2, ncols=2, height_ratios=[2,1], 
+    fig, axes = plt.subplots(figsize=(8.5,4), nrows=2, ncols=2, height_ratios=[2,1], 
                              constrained_layout=True) 
     
     species_color_map = {}
     
     # helper to plot one column
-    def plot_column(ax_conc, ax_vol, t_int, conc_int, v_int, col_title):
+    def plot_column(ax_conc, ax_vol, t_int, conc_int, v_int, col_titles):
         # Concentration
         for i in range(len(species_to)):
             color = cmap_colors[i % len(cmap_colors)]
@@ -810,23 +998,24 @@ def plot_deterministic_dual_comparison(t_to, conc_to, v_to, species_to,
             species_color_map[species_int[i]] = color
             ax_conc.plot(t_int, conc_int[i], color=color, alpha=0.7, linestyle=linestyles[1], linewidth=2.5)
                      
-        ax_conc.set_ylabel("Concentration", fontsize=label_fs)
-        ax_conc.set_xlabel("Time", fontsize=label_fs)
-        ax_conc.tick_params(axis='both', labelsize=tick_fs)
-        ax_conc.set_title(col_title, loc="left", fontsize=title_fs)
+        ax_conc.set_ylabel("Concentration")
+        ax_conc.set_xlabel("Time")
+        ax_conc.set_title(col_titles[0], loc="left")
 
         # Volume
         ax_vol.plot(t_to, v_to, color='black', linestyle=linestyles[0], alpha=0.5, linewidth=2)
         ax_vol.plot(t_int, v_int, color='black', linestyle=linestyles[1], alpha=0.7, linewidth=2.5)
-        ax_vol.set_xlabel("Time", fontsize=label_fs)
-        ax_vol.set_ylabel("Volume", fontsize=label_fs)
-        ax_vol.tick_params(axis='both', labelsize=tick_fs)
+        ax_vol.set_xlabel("Time")
+        ax_vol.set_ylabel("Volume")
+        ax_vol.set_title(col_titles[1], loc="left")
+        
         ax_vol.set_yscale('log')
+        ax_vol.yaxis.set_minor_locator(ticker.NullLocator()) # REMOVE MINOR TICKS
 
     # Plot Left Column (Equivalent)
-    plot_column(axes[0, 0], axes[1, 0], t_int_eq, conc_int_eq, v_int_eq, "(A)")
+    plot_column(axes[0, 0], axes[1, 0], t_int_eq, conc_int_eq, v_int_eq, ["(A)","(C)"])
     # Plot Right Column (Broken)
-    plot_column(axes[0, 1], axes[1, 1], t_int_br, conc_int_br, v_int_br, "(B)")
+    plot_column(axes[0, 1], axes[1, 1], t_int_br, conc_int_br, v_int_br, ["(B)","(D)"])
     
     # Custom Legend (Shared for entire figure)
     species_handles = [Patch(color=color, label=sp) for sp, color in species_color_map.items()]
@@ -835,7 +1024,7 @@ def plot_deterministic_dual_comparison(t_to, conc_to, v_to, species_to,
     line_int = Line2D([0], [0], color='gray', linestyle=linestyles[1], alpha=0.7, linewidth=2.5, label='Intermediates')
     
     handles = species_handles + [Patch(color='none', label='')] + [line_to, line_int]
-    axes[0, 1].legend(handles=handles, loc='upper left', bbox_to_anchor=(1.05, 1.05), fontsize=legend_fs)
+    axes[0, 1].legend(handles=handles, loc='upper left', bbox_to_anchor=(1.05, 1.05))
     
     if figname:
         os.makedirs("../figures_TFM", exist_ok=True)
@@ -844,14 +1033,10 @@ def plot_deterministic_dual_comparison(t_to, conc_to, v_to, species_to,
 
 
 def plot_volume_sweep_dual_comparison(results_to, results_int_eq, results_int_br, k_values, figname=None):
-    """Plots a 1x2 grid for volume sweeps. Left: Equivalent. Right: Broken."""
-    title_fs = 16
-    label_fs = 15
-    tick_fs = 14
-    legend_fs = 14
+
     
     colors_sweep = plt.cm.rainbow(np.linspace(0, 1, len(k_values)))
-    fig, axes = plt.subplots(figsize=(10,4), ncols=2, constrained_layout=True)
+    fig, axes = plt.subplots(figsize=(8.5,3.5), ncols=2, constrained_layout=True)
 
     def plot_sweep_axis(ax, res_int, col_title):
         for n, k_val in enumerate(k_values):
@@ -861,14 +1046,16 @@ def plot_volume_sweep_dual_comparison(results_to, results_int_eq, results_int_br
                     color=colors_sweep[n], alpha=0.4, linewidth=2)
             ax.plot(t_int, v_int, label=fr"$k_3$ = {k_val:.1e} (intermediate)", 
                     color=colors_sweep[n], alpha=0.7, linewidth=2.5, linestyle='--')
-        ax.set_xlabel("Time", fontsize=label_fs)
-        ax.set_ylabel("Volume", fontsize=label_fs)
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Volume")
+        
         ax.set_yscale('log')
-        ax.tick_params(axis='both', labelsize=tick_fs)
-        ax.set_title(col_title, loc="left", fontsize=title_fs)
+        ax.yaxis.set_minor_locator(ticker.NullLocator()) # REMOVE MINOR TICKS
+        
+        ax.set_title(col_title, loc="left")
 
-    plot_sweep_axis(axes[0], results_int_eq, "(C)")
-    plot_sweep_axis(axes[1], results_int_br, "(D)")
+    plot_sweep_axis(axes[0], results_int_eq, "(E)")
+    plot_sweep_axis(axes[1], results_int_br, "(F)")
 
     # Custom Legend
     line_to = mlines.Line2D([], [], color='gray', linestyle='-', label='Third-order')
@@ -877,7 +1064,7 @@ def plot_volume_sweep_dual_comparison(results_to, results_int_eq, results_int_br
     handles = species_handles + [Patch(color='none', label='')] + [line_to, line_int]
 
     axes[1].legend(handles=handles, loc='center left', bbox_to_anchor=(1.05, 0.5), 
-                   fontsize=legend_fs-2, title=r"$k_1^{T}$ and $k_{eff}^{Int}$", title_fontsize=legend_fs-1)
+                   title=r"$k_1^{T}$ and $k_{eff}^{Int}$")
 
     if figname:
         os.makedirs("../figures_TFM", exist_ok=True)

@@ -45,7 +45,7 @@ if __name__ == "__main__":
     set_publication_style()
     print("Running Kinetic Equivalence Analysis...\n")
     
-    t_end = 8
+    t_end = 12
     t_span = (0, t_end)
     t_eval = np.linspace(0, t_end, 500)
     

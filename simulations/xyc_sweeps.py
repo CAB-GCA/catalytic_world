@@ -99,5 +99,5 @@ if __name__ == "__main__":
     plt.legend(loc='center left',bbox_to_anchor=(1., 0.5), title="$k_{ar}$", fontsize=11, title_fontsize=12)
     plt.title("(A)", loc="left",x = -0.05, y=1, pad=10, fontsize=16)
     plt.tight_layout()
-    plt.savefig("figures_TFM/gillespie_equilibrium_errors_kar.png", bbox_inches='tight', dpi=300)
+    plt.savefig("../figures_TFM/gillespie_equilibrium_errors_kar.png", bbox_inches='tight', dpi=300)
     plt.show()
