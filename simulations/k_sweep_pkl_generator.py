@@ -106,14 +106,14 @@ def main():
     
     # You can adjust these logspaces based on your exact desired limits!
     # Sweep for k1 (Index 0): From 10^-4 to 10^7
-    k0_conditions = np.logspace(-4, 7, 23)
+    # k0_conditions = np.logspace(-4, 7, 23)
     
     # Sweep for k2 (Index 1): From 10^-4 to 10^7
     k1_conditions = np.logspace(-4, 7, 23)
     
     # --- 3. EXECUTE ---
-    run_sweep_for_index(target_k_index=0, k_conditions=k0_conditions, 
-                        replicates_per_condition=replicates_per_condition, base_params=base_params)
+    # run_sweep_for_index(target_k_index=0, k_conditions=k0_conditions, 
+    #                     replicates_per_condition=replicates_per_condition, base_params=base_params)
                         
     run_sweep_for_index(target_k_index=1, k_conditions=k1_conditions, 
                         replicates_per_condition=replicates_per_condition, base_params=base_params)

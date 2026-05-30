@@ -40,8 +40,8 @@ if __name__ == "__main__":
     # 1. SWEEP: k2 vs k4 (using files alpha_sweep_k1_k3 / r2_sweep_k1_k3)
     # ============================================================
     print("Processing k2 vs k4 sweep...")
-    path_alpha_1_3 = os.path.join(project_root, "data_archive", "alpha_sweep_k1_k3.pkl")
-    path_r2_1_3    = os.path.join(project_root, "data_archive", "r2_sweep_k1_k3.pkl")
+    path_alpha_1_3 = os.path.join(project_root, "data_archive", "alpha_sweep_k1_k3_deterministic.pkl")
+    path_r2_1_3    = os.path.join(project_root, "data_archive", "r2_sweep_k1_k3_deterministic.pkl")
     
     k2_vs_k4 = load_alpha_grid(path_alpha_1_3)
     r2_grid_1_3 = load_alpha_grid(path_r2_1_3)
